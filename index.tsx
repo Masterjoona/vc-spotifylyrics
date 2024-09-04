@@ -1,0 +1,51 @@
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2024 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import "./styles.css";
+
+import { Settings } from "@api/Settings";
+import ErrorBoundary from "@components/ErrorBoundary";
+import { Devs } from "@utils/constants";
+import definePlugin from "@utils/types";
+import { Player } from "plugins/spotifyControls/PlayerComponent";
+
+import { Lyrics } from "./lyrics";
+
+
+export default definePlugin({
+    name: "SpotifyLyrics",
+    authors: [Devs.Joona],
+    description: "Adds lyrics to SpotifyControls",
+    patches: [
+        {
+            find: "this.isCopiedStreakGodlike",
+            replacement: {
+                match: /Vencord\.Plugins\.plugins\["SpotifyControls"]\.PanelWrapper/,
+                replace: "$self.FakePanelWrapper"
+            },
+            predicate: () => Settings.plugins.SpotifyControls.enabled
+        },
+    ],
+    FakePanelWrapper({ VencordOriginal, ...props }) {
+        return (
+            <>
+                <ErrorBoundary
+                    fallback={() => (
+                        <div className="vc-spotify-fallback">
+                            <p>Failed to render Spotify Lyrics Modal :(</p>
+                            <p >Check the console for errors</p>
+                        </div>
+                    )}
+                >
+                    <Player />
+                    <Lyrics />
+                </ErrorBoundary>
+
+                <VencordOriginal {...props} />
+            </>
+        );
+    },
+});
