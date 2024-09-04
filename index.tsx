@@ -19,6 +19,7 @@ export default definePlugin({
     name: "SpotifyLyrics",
     authors: [Devs.Joona],
     description: "Adds lyrics to SpotifyControls",
+    dependencies: ["SpotifyControls"],
     patches: [
         {
             find: "this.isCopiedStreakGodlike",
