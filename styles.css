@@ -8,6 +8,12 @@
     font-size: 16px;
     text-align: center;
     animation: move-up-down 2s ease-in-out infinite;
+    color: var(--text-normal)
+}
+
+.vc-spotify-lyrics-music-note-muted {
+    color: var(--text-muted);
+    animation: none;
 }
 
 @keyframes move-up-down {
@@ -51,4 +57,8 @@
 
 .vc-spotify-lyrics-modal-line-current {
     font-weight: bold;
+}
+
+.vc-spotify-lyrics-modal-timestamp {
+    color: var(--text-muted);
 }
