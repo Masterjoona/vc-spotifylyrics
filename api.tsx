@@ -7,7 +7,7 @@
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 const baseUrlLrclib = "https://lrclib.net/api/get";
-const LyricsCache = new Map<string, SyncedLyrics[]>();
+const LyricsCache = new Map<string, SyncedLyrics[] | null>();
 
 export interface SyncedLyrics {
     id: number;
@@ -66,7 +66,7 @@ export async function getLyrics(track: Track): Promise<SyncedLyrics[] | null> {
 
     const lyrics = await fetchLyrics(track);
     if (!lyrics) {
-        LyricsCache.set(cacheKey, [{ id: 0, time: 0, text: "No lyrics found", lrcTime: "[00:00.00]" }]);
+        LyricsCache.set(cacheKey, null);
         return null;
     }
     LyricsCache.set(cacheKey, lyrics);
