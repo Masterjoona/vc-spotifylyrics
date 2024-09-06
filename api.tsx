@@ -58,7 +58,6 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
 
 
 export async function getLyrics(track: Track): Promise<SyncedLyrics[] | null> {
-    console.log("getLyrics", track);
     const cacheKey = track.id;
     if (LyricsCache.has(cacheKey)) {
         return LyricsCache.get(cacheKey)!;
