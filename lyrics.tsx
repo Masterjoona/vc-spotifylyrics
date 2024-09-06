@@ -11,6 +11,7 @@ import { ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@ut
 import { Forms, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
 import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
+import { settings } from ".";
 import { getLyrics, SyncedLyrics } from "./api";
 
 const cl = classNameFactory("vc-spotify-lyrics-");
@@ -18,10 +19,10 @@ const cl = classNameFactory("vc-spotify-lyrics-");
 let currentLyricIndex: Number | null = null;
 let setCurrentLyricIndex: Function;
 
-function MusicNote(active: boolean = true) {
+function MusicNote() {
     return (
-        <div className={cl("music-note", !active && "music-note-muted")}>
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+        <div className={cl("music-note")}>
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="var(--text-muted)">
                 <path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z" />
             </svg>
         </div>
@@ -31,6 +32,7 @@ function MusicNote(active: boolean = true) {
 function LyricsDisplay() {
     const track = SpotifyStore.track!;
 
+    const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
     const [lyrics, setLyrics] = useState<SyncedLyrics[] | null>(null);
     const [currentLyric, setCurrentLyric] = useState<SyncedLyrics | null>(null);
     const [previousLyric, setPreviousLyric] = useState<SyncedLyrics | null>(null);
@@ -76,10 +78,10 @@ function LyricsDisplay() {
     ));
 
     if (!lyrics) {
-        return (
+        return (ShowMusicNoteOnNoLyrics) && (
             <div className="vc-spotify-lyrics">
                 <TooltipContainer text="No synced lyrics found">
-                    {MusicNote(false)}
+                    {MusicNote()}
                 </TooltipContainer>
             </div>
         );

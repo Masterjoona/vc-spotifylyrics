@@ -6,13 +6,22 @@
 
 import "./styles.css";
 
-import { Settings } from "@api/Settings";
+import { definePluginSettings, Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
-import definePlugin from "@utils/types";
+import definePlugin, { OptionType, } from "@utils/types";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
 import { Lyrics } from "./lyrics";
+
+
+export const settings = definePluginSettings({
+    ShowMusicNoteOnNoLyrics: {
+        description: "Show a music note icon when no lyrics are found",
+        type: OptionType.BOOLEAN,
+        default: true,
+    },
+});
 
 
 export default definePlugin({
@@ -49,4 +58,5 @@ export default definePlugin({
             </>
         );
     },
+    settings,
 });
