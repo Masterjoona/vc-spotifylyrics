@@ -11,6 +11,7 @@ import { ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@ut
 import { Forms, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
 import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
+import { settings } from ".";
 import { getLyrics, SyncedLyrics } from "./api";
 
 const cl = classNameFactory("vc-spotify-lyrics-");
@@ -21,7 +22,7 @@ let setCurrentLyricIndex: Function;
 function MusicNote() {
     return (
         <div className={cl("music-note")}>
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e8eaed">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="var(--text-muted)">
                 <path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z" />
             </svg>
         </div>
@@ -31,6 +32,7 @@ function MusicNote() {
 function LyricsDisplay() {
     const track = SpotifyStore.track!;
 
+    const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
     const [lyrics, setLyrics] = useState<SyncedLyrics[] | null>(null);
     const [currentLyric, setCurrentLyric] = useState<SyncedLyrics | null>(null);
     const [previousLyric, setPreviousLyric] = useState<SyncedLyrics | null>(null);
@@ -76,7 +78,7 @@ function LyricsDisplay() {
     ));
 
     if (!lyrics) {
-        return (
+        return (ShowMusicNoteOnNoLyrics) && (
             <div className="vc-spotify-lyrics">
                 <TooltipContainer text="No synced lyrics found">
                     {MusicNote()}
@@ -198,7 +200,7 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
                             selectable
                             className={currentLyricIndex === i ? cl("modal-line-current") : cl("modal-line")}
                         >
-                            {line.lrcTime} {line.text}
+                            <span className={cl("modal-timestamp")}>{line.lrcTime}</span> {line.text}
                         </Text>
                     ))}
                 </div>

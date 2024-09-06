@@ -7,10 +7,10 @@
 .vc-spotify-lyrics-music-note {
     font-size: 16px;
     text-align: center;
-    animation: move-up-down 2s ease-in-out infinite;
+    animation: side-to-side 2s ease-in-out infinite;
 }
 
-@keyframes move-up-down {
+@keyframes side-to-side {
     0%,
     100% {
         transform: translateX(0);
@@ -51,4 +51,8 @@
 
 .vc-spotify-lyrics-modal-line-current {
     font-weight: bold;
+}
+
+.vc-spotify-lyrics-modal-timestamp {
+    color: var(--text-muted);
 }
