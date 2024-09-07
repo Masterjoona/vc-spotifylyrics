@@ -56,8 +56,6 @@
 .vc-spotify-lyrics-modal-note {
     height: 1lh;
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
 }
 
 .vc-spotify-lyrics-modal-line-current {

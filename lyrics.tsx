@@ -19,7 +19,7 @@ const cl = classNameFactory("vc-spotify-lyrics-");
 let currentLyricIndex: Number | null = null;
 let setCurrentLyricIndex: Function;
 
-function NoteSvg(className?: string | undefined) {
+function NoteSvg(className: string) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 480 720" fill="currentColor" className={className}>
             <path d="m160,-240 q -66,0 -113,-47 -47,-47 -47,-113 0,-66 47,-113 47,-47 113,-47 23,0 42.5,5.5 19.5,5.5 37.5,16.5 v -422 h 240 v 160 H 320 v 400 q 0,66 -47,113 -47,47 -113,47 z" />
@@ -76,13 +76,13 @@ function LyricsDisplay() {
     ));
 
     if (!lyrics) {
-        return ShowMusicNoteOnNoLyrics ? (
+        return ShowMusicNoteOnNoLyrics && (
             <div className="vc-spotify-lyrics">
                 <TooltipContainer text="No synced lyrics found">
                     {NoteSvg(cl("music-note"))}
                 </TooltipContainer>
             </div>
-        ) : null;
+        );
     }
 
     return (
