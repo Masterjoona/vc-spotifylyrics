@@ -213,9 +213,7 @@ function seekTimestamp({ line }: { line: SyncedLyrics; }) {
     return (
         <span
             className={cl("modal-timestamp")}
-            onClick={() => {
-                SpotifyStore.seek(line.time * 1000);
-            }}
+            onClick={() => SpotifyStore.seek(line.time * 1000)}
         >
             {line.lrcTime}
         </span>
