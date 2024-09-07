@@ -8,6 +8,9 @@
     font-size: 16px;
     text-align: center;
     animation: side-to-side 2s ease-in-out infinite;
+    color: var(--text-muted);
+    height: 18px;
+    margin: 3px;
 }
 
 @keyframes side-to-side {
@@ -47,6 +50,12 @@
 .vc-spotify-lyrics-modal-line {
     margin: 4px 0;
     padding: 4px 8px;
+    position: relative;
+}
+
+.vc-spotify-lyrics-modal-note {
+    height: 1lh;
+    position: absolute;
 }
 
 .vc-spotify-lyrics-modal-line-current {
@@ -55,6 +64,7 @@
 
 .vc-spotify-lyrics-modal-timestamp {
     color: var(--text-muted);
+    margin-right: 0.5em;
     cursor: pointer;
 }
 
