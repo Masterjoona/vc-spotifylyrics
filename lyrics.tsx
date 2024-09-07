@@ -76,13 +76,13 @@ function LyricsDisplay() {
     ));
 
     if (!lyrics) {
-        return (ShowMusicNoteOnNoLyrics) && (
+        return ShowMusicNoteOnNoLyrics ? (
             <div className="vc-spotify-lyrics">
                 <TooltipContainer text="No synced lyrics found">
                     {NoteSvg(cl("music-note"))}
                 </TooltipContainer>
             </div>
-        );
+        ) : null;
     }
 
     return (
