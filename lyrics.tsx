@@ -198,7 +198,7 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
                             selectable
                             className={currentLyricIndex === i ? cl("modal-line-current") : cl("modal-line")}
                         >
-                            <span className={cl("modal-timestamp")}>{line.lrcTime}</span>{line.text || NoteSvg(cl("modal-note"))}
+                            {seekTimestamp({ line })}{line.text || NoteSvg(cl("modal-note"))}
                         </Text>
                     ))}
                 </div>
@@ -207,3 +207,13 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
     );
 }
 
+function seekTimestamp({ line }: { line: SyncedLyrics; }) {
+    return (
+        <span
+            className={cl("modal-timestamp")}
+            onClick={() => SpotifyStore.seek(line.time * 1000)}
+        >
+            {line.lrcTime}
+        </span>
+    );
+}

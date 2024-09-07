@@ -65,4 +65,9 @@
 .vc-spotify-lyrics-modal-timestamp {
     color: var(--text-muted);
     margin-right: 0.5em;
+    cursor: pointer;
+}
+
+.vc-spotify-lyrics-modal-timestamp:hover {
+    text-decoration: underline;
 }
