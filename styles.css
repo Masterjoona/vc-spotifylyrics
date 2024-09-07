@@ -29,6 +29,7 @@
 
 .vc-spotify-lyrics-current {
     cursor: pointer;
+    font-weight: bold;
 }
 
 .vc-spotify-lyrics-header-content {
