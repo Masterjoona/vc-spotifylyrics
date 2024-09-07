@@ -19,13 +19,11 @@ const cl = classNameFactory("vc-spotify-lyrics-");
 let currentLyricIndex: Number | null = null;
 let setCurrentLyricIndex: Function;
 
-function MusicNote() {
+function NoteSvg(className?: string | undefined) {
     return (
-        <div className={cl("music-note")}>
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="var(--text-muted)">
-                <path d="M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560v400q0 66-47 113t-113 47Z" />
-            </svg>
-        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 480 720" fill="currentColor" className={className}>
+            <path d="m160,-240 q -66,0 -113,-47 -47,-47 -47,-113 0,-66 47,-113 47,-47 113,-47 23,0 42.5,5.5 19.5,5.5 37.5,16.5 v -422 h 240 v 160 H 320 v 400 q 0,66 -47,113 -47,47 -113,47 z" />
+        </svg>
     );
 }
 
@@ -81,7 +79,7 @@ function LyricsDisplay() {
         return (ShowMusicNoteOnNoLyrics) && (
             <div className="vc-spotify-lyrics">
                 <TooltipContainer text="No synced lyrics found">
-                    {MusicNote()}
+                    {NoteSvg(cl("music-note"))}
                 </TooltipContainer>
             </div>
         );
@@ -106,7 +104,7 @@ function LyricsDisplay() {
                     {currentLyric.text}
                 </Text>
             ) : (
-                MusicNote()
+                NoteSvg(cl("music-note"))
             )}
             {nextLyric && (
                 <Text variant="text-xs/normal" className={cl("next")}>
@@ -200,7 +198,7 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
                             selectable
                             className={currentLyricIndex === i ? cl("modal-line-current") : cl("modal-line")}
                         >
-                            <span className={cl("modal-timestamp")}>{line.lrcTime}</span> {line.text}
+                            <span className={cl("modal-timestamp")}>{line.lrcTime}</span>{line.text || NoteSvg(cl("modal-note"))}
                         </Text>
                     ))}
                 </div>
