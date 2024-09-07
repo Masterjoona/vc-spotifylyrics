@@ -200,7 +200,7 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
                             selectable
                             className={currentLyricIndex === i ? cl("modal-line-current") : cl("modal-line")}
                         >
-                            <span className={cl("modal-timestamp")}>{line.lrcTime}</span> {line.text}
+                            {seekTimestamp({ line })} {line.text}
                         </Text>
                     ))}
                 </div>
@@ -209,3 +209,23 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
     );
 }
 
+function seekTimestamp({ line }: { line: SyncedLyrics; }) {
+    const [storePosition, isSettingPosition] = useStateFromStores(
+        [SpotifyStore],
+        () => [SpotifyStore.mPosition, SpotifyStore.isSettingPosition]
+    );
+    const [position, setPosition] = useState(storePosition);
+
+    return (
+        <span
+            className={cl("modal-timestamp")}
+            onClick={() => {
+                if (isSettingPosition) return;
+                setPosition(line.time * 1000);
+                SpotifyStore.seek(line.time * 1000);
+            }}
+        >
+            {line.lrcTime}
+        </span>
+    );
+}
