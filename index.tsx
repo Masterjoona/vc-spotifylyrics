@@ -10,8 +10,10 @@ import { definePluginSettings, Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType, } from "@utils/types";
+import { Button, showToast, Toasts } from "@webpack/common";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
+import { clearLyricsCache } from "./api";
 import { Lyrics } from "./lyrics";
 
 
@@ -21,6 +23,29 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         default: true,
     },
+    LyricsPosition: {
+        description: "Position of the lyrics",
+        type: OptionType.SELECT,
+        options: [
+            { value: "above", label: "Above SpotifyControls" },
+            { value: "below", label: "Below SpotifyControls", default: true },
+        ],
+    },
+    PurgeLyricsCache: {
+        description: "Purge the lyrics cache",
+        type: OptionType.COMPONENT,
+        component: () => (
+            <Button
+                color={Button.Colors.RED}
+                onClick={() => {
+                    clearLyricsCache();
+                    showToast("Lyrics cache purged", Toasts.Type.SUCCESS);
+                }}
+            >
+                Purge Cache
+            </Button>
+        ),
+    }
 });
 
 
@@ -40,18 +65,20 @@ export default definePlugin({
         },
     ],
     FakePanelWrapper({ VencordOriginal, ...props }) {
+        const { LyricsPosition } = settings.use(["LyricsPosition"]);
         return (
             <>
                 <ErrorBoundary
                     fallback={() => (
                         <div className="vc-spotify-fallback">
                             <p>Failed to render Spotify Lyrics Modal :(</p>
-                            <p >Check the console for errors</p>
+                            <p>Check the console for errors</p>
                         </div>
                     )}
                 >
+                    {LyricsPosition === "above" && <Lyrics />}
                     <Player />
-                    <Lyrics />
+                    {LyricsPosition === "below" && <Lyrics />}
                 </ErrorBoundary>
 
                 <VencordOriginal {...props} />

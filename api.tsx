@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { DataStore } from "@api/index";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 const baseUrlLrclib = "https://lrclib.net/api/get";
-const LyricsCache = new Map<string, SyncedLyrics[] | null>();
-
+const LyricsCacheKey = "SpotifyLyricsCache";
+const tempCache = new Map<string, SyncedLyrics[] | null>();
 export interface SyncedLyrics {
     id: number;
     lrcTime: string;
@@ -16,7 +17,19 @@ export interface SyncedLyrics {
     text: string | null;
 }
 
-function parseTime(time: string) {
+export interface LrcLibResponse {
+    id: number;
+    name: string;
+    trackName: string;
+    artistName: string;
+    albumName: string;
+    duration: number;
+    instrumental: boolean;
+    plainLyrics: string;
+    syncedLyrics?: any;
+}
+
+function lyricTimeToSeconds(time: string) {
     const [minutes, seconds] = time.slice(1, -1).split(":").map(Number);
     return minutes * 60 + seconds;
 }
@@ -39,16 +52,16 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
     if (!response.ok) {
         return null;
     }
-    const data = await response.json();
+    const data = await response.json() as LrcLibResponse;
     if (!data.syncedLyrics) {
         return null;
     }
-    const lyrics = data.syncedLyrics as string;
+    const lyrics = data.syncedLyrics;
     const lines = lyrics.split("\n");
     return lines.map((line: string, i: number) => {
         const [time, text] = line.split("] ");
         return {
-            time: parseTime(time),
+            time: lyricTimeToSeconds(time),
             text: text || null, // instead of empty string
             id: i,
             lrcTime: time.slice(1)
@@ -59,15 +72,22 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
 
 export async function getLyrics(track: Track): Promise<SyncedLyrics[] | null> {
     const cacheKey = track.id;
-    if (LyricsCache.has(cacheKey)) {
-        return LyricsCache.get(cacheKey)!;
+    const cached = await DataStore.get(LyricsCacheKey) as Record<string, SyncedLyrics[] | null>;
+    if (cached && cacheKey in cached) {
+        return cached[cacheKey];
     }
 
     const lyrics = await fetchLyrics(track);
     if (!lyrics) {
-        LyricsCache.set(cacheKey, null);
+        tempCache.set(cacheKey, null);
         return null;
     }
-    LyricsCache.set(cacheKey, lyrics);
+    await DataStore.set(LyricsCacheKey, { ...cached, [cacheKey]: lyrics });
     return lyrics;
 }
+
+export async function clearLyricsCache() {
+    tempCache.clear();
+    await DataStore.set(LyricsCacheKey, {});
+}
+
