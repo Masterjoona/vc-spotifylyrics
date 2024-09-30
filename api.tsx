@@ -9,7 +9,8 @@ import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 const baseUrlLrclib = "https://lrclib.net/api/get";
 const LyricsCacheKey = "SpotifyLyricsCache";
-const tempCache = new Map<string, SyncedLyrics[] | null>();
+const nullLyricCache = new Set<string>();
+
 export interface SyncedLyrics {
     id: number;
     lrcTime: string;
@@ -49,13 +50,16 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
             "User-Agent": "https://github.com/Masterjoona/vc-spotifylyrics"
         }
     });
+
     if (!response.ok) {
         return null;
     }
+
     const data = await response.json() as LrcLibResponse;
     if (!data.syncedLyrics) {
         return null;
     }
+
     const lyrics = data.syncedLyrics;
     const lines = lyrics.split("\n");
     return lines.map((line: string, i: number) => {
@@ -77,17 +81,20 @@ export async function getLyrics(track: Track): Promise<SyncedLyrics[] | null> {
         return cached[cacheKey];
     }
 
+    if (nullLyricCache.has(cacheKey)) return null;
+
     const lyrics = await fetchLyrics(track);
     if (!lyrics) {
-        tempCache.set(cacheKey, null);
+        nullLyricCache.add(cacheKey);
         return null;
     }
+
     await DataStore.set(LyricsCacheKey, { ...cached, [cacheKey]: lyrics });
     return lyrics;
 }
 
 export async function clearLyricsCache() {
-    tempCache.clear();
+    nullLyricCache.clear();
     await DataStore.set(LyricsCacheKey, {});
 }
 
