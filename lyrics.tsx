@@ -8,16 +8,13 @@ import { classNameFactory } from "@api/Styles";
 import { openImageModal } from "@utils/discord";
 import { copyWithToast } from "@utils/misc";
 import { ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@utils/modal";
-import { Forms, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { Forms, Text, TooltipContainer, useEffect, useState, useStateFromStores, React } from "@webpack/common";
 import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { settings } from ".";
 import { getLyrics, SyncedLyrics } from "./api";
 
 const cl = classNameFactory("vc-spotify-lyrics-");
-
-let currentLyricIndex: Number | null = null;
-let setCurrentLyricIndex: Function;
 
 function NoteSvg(className: string) {
     return (
@@ -30,11 +27,12 @@ function NoteSvg(className: string) {
 function LyricsDisplay() {
     const track = SpotifyStore.track!;
 
-    const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
+    const { ShowMusicNoteOnNoLyrics, ShowSpinningCoverArt } = settings.use([
+        "ShowMusicNoteOnNoLyrics",
+        "ShowSpinningCoverArt",
+    ]);
     const [lyrics, setLyrics] = useState<SyncedLyrics[] | null>(null);
-    const [currentLyric, setCurrentLyric] = useState<SyncedLyrics | null>(null);
-    const [previousLyric, setPreviousLyric] = useState<SyncedLyrics | null>(null);
-    const [nextLyric, setNextLyric] = useState<SyncedLyrics | null>(null);
+    const [currentLyricIndex, setCurrentLyricIndex] = useState<number>(0);
 
     const [storePosition, isSettingPosition, isPlaying] = useStateFromStores(
         [SpotifyStore],
@@ -42,17 +40,20 @@ function LyricsDisplay() {
     );
     const [position, setPosition] = useState(storePosition);
 
+    const lyricsContainerRef = React.useRef<HTMLDivElement>(null);
+    const backgroundImageRef = React.useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         getLyrics(track).then(setLyrics);
     }, [track]);
 
     useEffect(() => {
         if (lyrics && position !== null) {
-            const currentIndex = lyrics.findIndex(l => l.time > position / 1000 && l.time < position / 1000 + 6) - 1;
-            setCurrentLyric(lyrics[currentIndex] || null);
-            setPreviousLyric(currentIndex > 0 ? lyrics[currentIndex - 1] : null);
-            setNextLyric(currentIndex < lyrics.length - 1 ? lyrics[currentIndex + 1] : null);
-            setCurrentLyricIndex?.(currentIndex);
+            const currentIndex = lyrics.findIndex(
+                (l, i) =>
+                    position / 1000 >= l.time && (i === lyrics.length - 1 || position / 1000 < lyrics[i + 1].time)
+            );
+            setCurrentLyricIndex(currentIndex !== -1 ? currentIndex : null);
         }
     }, [lyrics, position]);
 
@@ -67,61 +68,97 @@ function LyricsDisplay() {
         }
     }, [storePosition, isSettingPosition, isPlaying]);
 
-    const openLyricsModal = () => openModal(props => (
-        <LyricsModal
-            rootProps={props}
-            track={track}
-            lyrics={lyrics}
-        />
-    ));
+    const lyricRefs = React.useRef<Array<React.RefObject<HTMLDivElement>>>([]);
+
+    useEffect(() => {
+        if (lyrics) {
+            lyricRefs.current = lyrics.map(() => React.createRef<HTMLDivElement>());
+        }
+    }, [lyrics]);
+
+    useEffect(() => {
+        if (currentLyricIndex !== null && lyricRefs.current[currentLyricIndex]) {
+            const currentLyricElement = lyricRefs.current[currentLyricIndex].current;
+            currentLyricElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+            if (backgroundImageRef.current && currentLyricElement && lyricsContainerRef.current) {
+                const containerRect = lyricsContainerRef.current.getBoundingClientRect();
+                const lyricRect = currentLyricElement.getBoundingClientRect();
+                const offset =
+                    lyricRect.top - containerRect.top - lyricsContainerRef.current.clientHeight / 2 + lyricRect.height / 2;
+                backgroundImageRef.current.style.top = `${offset}px`;
+            }
+        }
+    }, [currentLyricIndex]);
+
+    const openLyricsModal = () =>
+        openModal((props) => <LyricsModal rootProps={props} track={track} lyrics={lyrics} />);
 
     if (!lyrics) {
-        return ShowMusicNoteOnNoLyrics && (
+        return ShowMusicNoteOnNoLyrics ? (
             <div className="vc-spotify-lyrics">
+                {ShowSpinningCoverArt && track.album.image.url && (
+                    <div
+                        className="background-image"
+                        style={{ backgroundImage: `url(${track.album.image.url})` }}
+                        ref={backgroundImageRef}
+                    />
+                )}
                 <TooltipContainer text="No synced lyrics found">
                     {NoteSvg(cl("music-note"))}
                 </TooltipContainer>
+                <Text variant="text-sm/normal" style={{ textAlign: "center", marginTop: "10px" }}>
+                    Sorry, no lyrics found.
+                    <br />
+                    Have a cat instead:
+                    <br />
+                    【≽ܫ≼】
+                </Text>
             </div>
-        );
+        ) : null;
     }
 
     return (
         <div
             className="vc-spotify-lyrics"
+            style={{ overflow: "hidden", cursor: "pointer", position: "relative" }}
             onClick={openLyricsModal}
         >
-            {previousLyric && (
-                <Text variant="text-xs/normal" className={cl("previous")}>
-                    {previousLyric.text}
-                </Text>
+            {ShowSpinningCoverArt && track.album.image.url && (
+                <div
+                    className="background-image"
+                    style={{ backgroundImage: `url(${track.album.image.url})` }}
+                    ref={backgroundImageRef}
+                />
             )}
-            {currentLyric ? (
-                <Text
-                    variant="text-sm/normal"
-                    className={cl("current")}
-                    onContextMenu={() => copyWithToast(currentLyric.text!, "Lyric copied")}
-                >
-                    {currentLyric.text}
-                </Text>
-            ) : (
-                NoteSvg(cl("music-note"))
-            )}
-            {nextLyric && (
-                <Text variant="text-xs/normal" className={cl("next")}>
-                    {nextLyric.text}
-                </Text>
-            )}
+            <div className={cl("lyrics-container")} ref={lyricsContainerRef}>
+                {lyrics.map((line, i) => (
+                    <Text
+                        key={i}
+                        variant={currentLyricIndex === i ? "text-md/semibold" : "text-sm/normal"}
+                        className={currentLyricIndex === i ? cl("current") : cl("line")}
+                        onContextMenu={() => copyWithToast(line.text!, "Lyric copied")}
+                        ref={lyricRefs.current[i]}
+                        style={{
+                            opacity: currentLyricIndex === i ? 1 : 0.6,
+                            margin: "4px 0",
+                            textAlign: "center",
+                        }}
+                    >
+                        {line.text || NoteSvg(cl("music-note"))}
+                    </Text>
+                ))}
+            </div>
         </div>
     );
 }
 
 export function Lyrics() {
-    // Copy from SpotifyControls
     const track = useStateFromStores(
         [SpotifyStore],
         () => SpotifyStore.track,
         null,
-        (prev, next) => prev?.id ? (prev.id === next?.id) : prev?.name === next?.name
+        (prev, next) => (prev?.id ? prev.id === next?.id : prev?.name === next?.name)
     );
 
     const device = useStateFromStores(
@@ -134,8 +171,6 @@ export function Lyrics() {
     const isPlaying = useStateFromStores([SpotifyStore], () => SpotifyStore.isPlaying);
     const [shouldHide, setShouldHide] = useState(false);
 
-    // Hide player after 5 minutes of inactivity
-
     useEffect(() => {
         setShouldHide(false);
         if (!isPlaying) {
@@ -144,13 +179,12 @@ export function Lyrics() {
         }
     }, [isPlaying]);
 
-    if (!track || !device?.is_active || shouldHide)
-        return null;
+    if (!track || !device?.is_active || shouldHide) return null;
 
     return <LyricsDisplay />;
 }
 
-function ModalHeaderContent({ track }: { track: Track; }) {
+function ModalHeaderContent({ track }: { track: Track }) {
     return (
         <ModalHeader>
             <Forms.FormTitle tag="h2">
@@ -163,24 +197,70 @@ function ModalHeaderContent({ track }: { track: Track; }) {
                             onClick={() => openImageModal(track.album.image.url)}
                         />
                     )}
-                    <span className={cl("track-info")}>
-                        {track.name} - {track.artists.map(a => a.name).join(", ")}
-                    </span>
+                    <div className={cl("track-info")}>
+                        <Text variant="text-lg/bold">{track.name}</Text>
+                        <Text variant="text-sm/normal" style={{ opacity: 0.8 }}>
+                            {track.artists.map((a) => a.name).join(", ")}
+                        </Text>
+                    </div>
                 </div>
             </Forms.FormTitle>
         </ModalHeader>
     );
 }
 
-export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProps, track: Track, lyrics: SyncedLyrics[] | null; }) {
-    [currentLyricIndex, setCurrentLyricIndex] = useState<number | null>(null);
+export function LyricsModal({
+    rootProps,
+    track,
+    lyrics,
+}: {
+    rootProps: ModalProps;
+    track: Track;
+    lyrics: SyncedLyrics[] | null;
+}) {
+    const [currentLyricIndex, setCurrentLyricIndex] = useState<number>(0);
+
+    useEffect(() => {
+        const updateCurrentLyric = () => {
+            const position = SpotifyStore.position / 1000;
+            if (lyrics) {
+                const index = lyrics.findIndex((lyric, i) => {
+                    const nextLyricTime = lyrics[i + 1]?.time ?? Infinity;
+                    return position >= lyric.time && position < nextLyricTime;
+                });
+                setCurrentLyricIndex(index !== -1 ? index : lyrics.length - 1);
+            }
+        };
+
+        const interval = setInterval(updateCurrentLyric, 500);
+        return () => clearInterval(interval);
+    }, [lyrics]);
+
+    const lyricRefs = React.useRef<Array<React.RefObject<HTMLDivElement>>>([]);
+
+    useEffect(() => {
+        if (lyrics) {
+            lyricRefs.current = lyrics.map(() => React.createRef<HTMLDivElement>());
+        }
+    }, [lyrics]);
+
+    useEffect(() => {
+        if (lyricRefs.current[currentLyricIndex]) {
+            lyricRefs.current[currentLyricIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [currentLyricIndex]);
+
     if (!lyrics) {
         return (
             <ModalRoot {...rootProps}>
                 <ModalHeaderContent track={track} />
                 <ModalContent>
                     <Text variant="text-md/normal" style={{ textAlign: "center", marginTop: "1rem" }}>
-                        No synced lyrics found
+                        Sorry, no lyrics found.
+                        <br />
+                        Have a cat instead:
+                        <br />
+                        【≽ܫ≼】
                     </Text>
                 </ModalContent>
             </ModalRoot>
@@ -191,14 +271,24 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
         <ModalRoot {...rootProps}>
             <ModalHeaderContent track={track} />
             <ModalContent>
-                <div>
+                <div className={cl("lyrics-modal-container")} style={{ overflowY: "auto", maxHeight: "400px" }}>
                     {lyrics.map((line, i) => (
                         <Text
-                            variant="text-sm/normal"
+                            key={i}
+                            variant={currentLyricIndex === i ? "text-md/semibold" : "text-sm/normal"}
                             selectable
                             className={currentLyricIndex === i ? cl("modal-line-current") : cl("modal-line")}
+                            onClick={() => SpotifyStore.seek(line.time * 1000)}
+                            onContextMenu={() => copyWithToast(line.text!, "Lyric copied")}
+                            ref={lyricRefs.current[i]}
+                            style={{
+                                opacity: currentLyricIndex === i ? 1 : 0.6,
+                                margin: "4px 0",
+                                textAlign: "center",
+                            }}
                         >
-                            {seekTimestamp({ line })}{line.text || NoteSvg(cl("modal-note"))}
+                            {seekTimestamp({ line })}
+                            {line.text || NoteSvg(cl("modal-note"))}
                         </Text>
                     ))}
                 </div>
@@ -207,12 +297,9 @@ export function LyricsModal({ rootProps, track, lyrics }: { rootProps: ModalProp
     );
 }
 
-function seekTimestamp({ line }: { line: SyncedLyrics; }) {
+function seekTimestamp({ line }: { line: SyncedLyrics }) {
     return (
-        <span
-            className={cl("modal-timestamp")}
-            onClick={() => SpotifyStore.seek(line.time * 1000)}
-        >
+        <span className={cl("modal-timestamp")} onClick={() => SpotifyStore.seek(line.time * 1000)}>
             {line.lrcTime}
         </span>
     );
