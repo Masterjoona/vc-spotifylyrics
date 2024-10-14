@@ -18,7 +18,7 @@ export interface SyncedLyrics {
     text: string | null;
 }
 
-export interface LrcLibResponse {
+interface LrcLibResponse {
     id: number;
     name: string;
     trackName: string;
@@ -26,8 +26,8 @@ export interface LrcLibResponse {
     albumName: string;
     duration: number;
     instrumental: boolean;
-    plainLyrics: string;
-    syncedLyrics?: any;
+    plainLyrics: string | null;
+    syncedLyrics: string | null;
 }
 
 function lyricTimeToSeconds(time: string) {
@@ -51,14 +51,10 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
         }
     });
 
-    if (!response.ok) {
-        return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json() as LrcLibResponse;
-    if (!data.syncedLyrics) {
-        return null;
-    }
+    if (!data.syncedLyrics) return null;
 
     const lyrics = data.syncedLyrics;
     const lines = lyrics.split("\n");
@@ -66,7 +62,7 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
         const [time, text] = line.split("] ");
         return {
             time: lyricTimeToSeconds(time),
-            text: text || null, // instead of empty string
+            text: text || null,
             id: i,
             lrcTime: time.slice(1)
         };
@@ -74,7 +70,8 @@ async function fetchLyrics(track: Track): Promise<SyncedLyrics[] | null> {
 }
 
 
-export async function getLyrics(track: Track): Promise<SyncedLyrics[] | null> {
+export async function getLyrics(track: Track | null): Promise<SyncedLyrics[] | null> {
+    if (!track) return null;
     const cacheKey = track.id;
     const cached = await DataStore.get(LyricsCacheKey) as Record<string, SyncedLyrics[] | null>;
     if (cached && cacheKey in cached) {

@@ -22,11 +22,6 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         default: true,
     },
-    ShowSpinningCoverArt: {
-        description: "Show spinning cover art background behind lyrics",
-        type: OptionType.BOOLEAN,
-        default: true,
-    },
     LyricsPosition: {
         description: "Position of the lyrics",
         type: OptionType.SELECT,
