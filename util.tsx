@@ -5,9 +5,8 @@
  */
 
 import { classNameFactory } from "@api/Styles";
-import { debounce } from "@shared/debounce";
 import { findByPropsLazy } from "@webpack";
-import { React, useCallback, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
 
 import { SyncedLyrics } from "./api";
 import { SpotifyLrcStore } from "./store";
@@ -55,35 +54,29 @@ export function useLyrics() {
 
     useEffect(() => {
         if (lyrics && position) {
-            const [currentIndex, noLimitIndex] = calculateIndexes(lyrics, position);
+            const [currentIndex, nextLyric] = calculateIndexes(lyrics, position);
             setCurrLrcIndex(currentIndex);
-            setNextLyric(noLimitIndex);
+            setNextLyric(nextLyric);
         }
     }, [lyrics, position]);
-
-    const scrollIntoView = useCallback(debounce((index: number) => {
-        if (lyricRefs[index]?.current) {
-            lyricRefs[index].current?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-    }, 100), [lyricRefs]);
 
     useEffect(() => {
         if (currLrcIndex !== null) {
             if (currLrcIndex >= 0) {
-                scrollIntoView(currLrcIndex);
+                lyricRefs[currLrcIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
             }
             if (currLrcIndex < 0 && nextLyric !== null) {
                 lyricRefs[nextLyric]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
             }
         }
-    }, [currLrcIndex, nextLyric, scrollIntoView]);
+    }, [currLrcIndex, nextLyric]);
 
     useEffect(() => {
         if (isPlaying) {
             setPosition(SpotifyLrcStore.position);
             const interval = setInterval(() => {
-                setPosition(p => p + 500);
-            }, 500);
+                setPosition(p => p + 1000);
+            }, 1000);
 
             return () => clearInterval(interval);
         }
