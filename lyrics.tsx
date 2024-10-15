@@ -13,11 +13,22 @@ import { LyricsModal } from "./modal";
 import { SpotifyLrcStore } from "./store";
 import { cl, NoteSvg, useLyrics } from "./util";
 
+
 function LyricsDisplay() {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
     const { lyrics, lyricRefs, currLrcIndex } = useLyrics();
 
     const openLyricsModal = () => openModal(props => <LyricsModal rootProps={props} />);
+
+    const makeClassName = (index: number): string => {
+        if (currLrcIndex === null) return "";
+
+        const diff = index - currLrcIndex;
+
+        if (diff === 0) return cl("current");
+        return cl(diff > 0 ? "next" : "prev");
+    };
+
 
     if (!lyrics) {
         return ShowMusicNoteOnNoLyrics && (
@@ -39,7 +50,7 @@ function LyricsDisplay() {
                     <Text
                         key={i}
                         variant={currLrcIndex === i ? "text-sm/normal" : "text-xs/normal"}
-                        className={currLrcIndex === i ? void 0 : cl("line")}
+                        className={makeClassName(i)}
                         onContextMenu={() => copyWithToast(line.text!, "Lyric copied")}
                         // @ts-ignore
                         ref={lyricRefs[i]}

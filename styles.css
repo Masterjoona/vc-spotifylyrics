@@ -19,7 +19,8 @@
     margin: 3px;
 }
 
-.vc-spotify-lyrics-line {
+.vc-spotify-lyrics-next,
+.vc-spotify-lyrics-prev {
     opacity: 0.6;
     margin-bottom: 1%;
 }
