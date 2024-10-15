@@ -9,13 +9,12 @@ import "./styles.css";
 import { definePluginSettings, Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
-import definePlugin, { OptionType, } from "@utils/types";
+import definePlugin, { OptionType } from "@utils/types";
 import { Button, showToast, Toasts } from "@webpack/common";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
 import { clearLyricsCache } from "./api";
 import { Lyrics } from "./lyrics";
-
 
 export const settings = definePluginSettings({
     ShowMusicNoteOnNoLyrics: {
@@ -45,9 +44,8 @@ export const settings = definePluginSettings({
                 Purge Cache
             </Button>
         ),
-    }
+    },
 });
-
 
 export default definePlugin({
     name: "SpotifyLyrics",
@@ -59,9 +57,9 @@ export default definePlugin({
             find: "this.isCopiedStreakGodlike",
             replacement: {
                 match: /Vencord\.Plugins\.plugins\["SpotifyControls"]\.PanelWrapper/,
-                replace: "$self.FakePanelWrapper"
+                replace: "$self.FakePanelWrapper",
             },
-            predicate: () => Settings.plugins.SpotifyControls.enabled
+            predicate: () => Settings.plugins.SpotifyControls.enabled,
         },
     ],
     FakePanelWrapper({ VencordOriginal, ...props }) {
