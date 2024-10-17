@@ -34,15 +34,15 @@ function ModalHeaderContent({ track }: { track: Track; }) {
 }
 
 export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
-    const { track, lyrics, lyricRefs, currLrcIndex } = useLyrics();
+    const { track, currentLyrics, lyricRefs, currLrcIndex } = useLyrics();
 
     return (
         <ModalRoot {...rootProps}>
             <ModalHeaderContent track={track} />
             <ModalContent>
                 <div className={cl("lyrics-modal-container") + ` ${scrollClasses.auto}`}>
-                    {lyrics ? (
-                        lyrics.map((line, i) => (
+                    {currentLyrics ? (
+                        currentLyrics.map((line, i) => (
                             <Text
                                 variant={currLrcIndex === i ? "text-md/semibold" : "text-sm/normal"}
                                 selectable

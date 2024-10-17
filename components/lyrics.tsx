@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { copyWithToast } from "@utils/misc";
 import { openModal } from "@utils/modal";
-import { React, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, React, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
 
-import { settings } from ".";
+import { settings } from "..";
+import { LyricsContextMenu } from "./ctxMenu";
 import { LyricsModal } from "./modal";
 import { SpotifyLrcStore } from "./store";
 import { cl, NoteSvg, useLyrics } from "./util";
@@ -16,7 +16,7 @@ import { cl, NoteSvg, useLyrics } from "./util";
 
 function LyricsDisplay() {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
-    const { lyrics, lyricRefs, currLrcIndex } = useLyrics();
+    const { lyricsInfo, lyricRefs, currentLyrics, currLrcIndex } = useLyrics();
 
     const openLyricsModal = () => openModal(props => <LyricsModal rootProps={props} />);
 
@@ -30,28 +30,34 @@ function LyricsDisplay() {
     };
 
 
-    if (!lyrics) {
+    if (!lyricsInfo) {
         return ShowMusicNoteOnNoLyrics && (
-            <div className="vc-spotify-lyrics">
+            <div className="vc-spotify-lyrics"
+                onContextMenu={e => {
+                    ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />);
+                }}
+            >
                 <TooltipContainer text="No synced lyrics found">
                     {NoteSvg(cl("music-note"))}
                 </TooltipContainer>
-            </div>
+            </div >
         );
     }
-
+    console.log(currentLyrics);
     return (
         <div
-            className="vc-spotify-lyrics vc-spotify-lyrics-pointer"
+            className="vc-spotify-lyrics"
             onClick={openLyricsModal}
+            onContextMenu={e => {
+                ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />);
+            }}
         >
             <div>
-                {lyrics.map((line, i) => (
+                {currentLyrics?.map((line, i) => (
                     <Text
                         key={i}
                         variant={currLrcIndex === i ? "text-sm/normal" : "text-xs/normal"}
                         className={makeClassName(i)}
-                        onContextMenu={() => copyWithToast(line.text!, "Lyric copied")}
                         // @ts-ignore
                         ref={lyricRefs[i]}
                     >

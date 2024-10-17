@@ -8,7 +8,7 @@ import { classNameFactory } from "@api/Styles";
 import { findByPropsLazy } from "@webpack";
 import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
 
-import { SyncedLyrics } from "./api";
+import { Provider, SyncedLyric } from "../types";
 import { SpotifyLrcStore } from "./store";
 
 export const scrollClasses = findByPropsLazy("auto", "customTheme");
@@ -23,7 +23,7 @@ export function NoteSvg(className: string) {
     );
 }
 
-const calculateIndexes = (lyrics: SyncedLyrics[], position: number) => {
+const calculateIndexes = (lyrics: SyncedLyric[], position: number) => {
     const inSeconds = position / 1000;
     const currentIndex = lyrics.findIndex(l => l.time > inSeconds && l.time < inSeconds + 8) - 1;
     const nextLyric = lyrics.findIndex(l => l.time >= inSeconds);
@@ -31,34 +31,47 @@ const calculateIndexes = (lyrics: SyncedLyrics[], position: number) => {
 };
 
 export function useLyrics() {
-    const [track, storePosition, isPlaying, lyrics] = useStateFromStores(
+    const [track, storePosition, isPlaying, lyricsInfo] = useStateFromStores(
         [SpotifyLrcStore],
         () => [
             SpotifyLrcStore.track!,
             SpotifyLrcStore.mPosition,
             SpotifyLrcStore.isPlaying,
-            SpotifyLrcStore.lyrics,
+            SpotifyLrcStore.lyricsInfo
         ]
     );
 
     const [currLrcIndex, setCurrLrcIndex] = useState<number | null>(null);
     const [nextLyric, setNextLyric] = useState<number | null>(null);
     const [position, setPosition] = useState(storePosition);
+    const [currentLyrics, setCurrentLyrics] = useState<SyncedLyric[] | null>(null);
     const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement>[]>([]);
 
     useEffect(() => {
-        if (lyrics) {
-            setLyricRefs(lyrics.map(() => React.createRef()));
+        console.log("Current lyrics info:", lyricsInfo);
+        if (lyricsInfo?.useLyric === Provider.Musixmatch) {
+            setCurrentLyrics(lyricsInfo.musixmatchLyrics ?? []);
+        } else if (lyricsInfo?.useLyric === Provider.Translated) {
+            setCurrentLyrics(lyricsInfo.englishTranslation ?? []);
+        } else {
+            setCurrentLyrics(lyricsInfo?.lrclibLyrics ?? []);
         }
-    }, [lyrics]);
+    }, [lyricsInfo]);
 
     useEffect(() => {
-        if (lyrics && position) {
-            const [currentIndex, nextLyric] = calculateIndexes(lyrics, position);
+        if (currentLyrics) {
+            setLyricRefs(currentLyrics.map(() => React.createRef()));
+        }
+    }, [currentLyrics]);
+
+
+    useEffect(() => {
+        if (currentLyrics && position) {
+            const [currentIndex, nextLyric] = calculateIndexes(currentLyrics, position);
             setCurrLrcIndex(currentIndex);
             setNextLyric(nextLyric);
         }
-    }, [lyrics, position]);
+    }, [currentLyrics, position]);
 
     useEffect(() => {
         if (currLrcIndex !== null) {
@@ -82,5 +95,5 @@ export function useLyrics() {
         }
     }, [storePosition, isPlaying]);
 
-    return { track, lyrics, lyricRefs, currLrcIndex, nextLyric };
+    return { track, lyricsInfo, lyricRefs, currLrcIndex, currentLyrics, nextLyric };
 }

@@ -13,8 +13,9 @@ import definePlugin, { OptionType } from "@utils/types";
 import { Button, showToast, Toasts } from "@webpack/common";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
-import { clearLyricsCache } from "./api";
-import { Lyrics } from "./lyrics";
+import { clearLyricsCache, migrateOldLyrics } from "./api";
+import { Lyrics } from "./components/lyrics";
+
 
 export const settings = definePluginSettings({
     ShowMusicNoteOnNoLyrics: {
@@ -28,6 +29,14 @@ export const settings = definePluginSettings({
         options: [
             { value: "above", label: "Above SpotifyControls" },
             { value: "below", label: "Below SpotifyControls", default: true },
+        ],
+    },
+    LyricsProvier: {
+        description: "Lyrics provider",
+        type: OptionType.SELECT,
+        options: [
+            { value: "lrclib", label: "LRCLIB - opensource", default: true },
+            { value: "musixmatch", label: "Musixmatch - bigger database, english translation" },
         ],
     },
     PurgeLyricsCache: {
@@ -84,4 +93,7 @@ export default definePlugin({
         );
     },
     settings,
+    async start() {
+        await migrateOldLyrics();
+    }
 });
