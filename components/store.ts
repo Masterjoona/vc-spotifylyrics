@@ -4,13 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { showNotification } from "@api/Notifications";
+import { PluginNative } from "@utils/types";
 import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { getLyrics } from "../api";
+import { getLyrics, updateLyrics } from "../api";
+import { getLyricsLrclib } from "../lrclibAPI";
 import { LyricsData, Provider } from "../types";
-
 
 interface PlayerStateMin {
     track: Track | null;
@@ -24,8 +26,15 @@ interface Device {
     is_active: boolean;
 }
 
+const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("../native")>;
 
-// Copy from spotifycontrols
+const lyricFetchers = {
+    [Provider.Spotify]: Native.getLyricsSpotify,
+    [Provider.Lrclib]: getLyricsLrclib,
+};
+
+
+// steal from spotifycontrols
 export const SpotifyLrcStore = proxyLazyWebpack(() => {
     class SpotifyLrcStore extends Flux.Store {
         public mPosition = 0;
@@ -63,8 +72,30 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
             store.emitChange();
         },
         // @ts-ignore
-        async SPOTIFY_LYRICS_PROVIDER(e: { provider: Provider; }) {
-            console.log("New lyrics info:", store.lyricsInfo);
+        async SPOTIFY_LYRICS_PROVIDER_CHANGE(e: { provider: Provider; }) {
+            const currentInfo = await getLyrics(store.track);
+            if (currentInfo?.useLyric === e.provider) return;
+
+            const newLyricsInfo = await lyricFetchers[e.provider](store.track!);
+            if (!newLyricsInfo) {
+                console.error("Failed to fetch lyrics with new provider");
+                showNotification({
+                    color: "#eed202",
+                    title: "Failed to fetch lyrics",
+                    body: "Failed to fetch lyrics with new provider",
+                    noPersist: true
+                });
+                return;
+            }
+
+            store.lyricsInfo = newLyricsInfo;
+
+            updateLyrics(
+                store.track!.id,
+                newLyricsInfo.lyricsVersions[e.provider]!,
+                e.provider
+            );
+
             store.emitChange();
         }
     });

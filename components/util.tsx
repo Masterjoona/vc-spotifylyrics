@@ -49,9 +49,17 @@ export function useLyrics() {
 
     useEffect(() => {
         if (lyricsInfo?.useLyric === Provider.Lrclib) {
-            setCurrentLyrics(lyricsInfo.lyricsVersions?.[Provider.Lrclib] ?? null);
+            const lyrics = lyricsInfo.lyricsVersions[Provider.Lrclib];
+            console.log("Lrclib lyrics", lyrics);
+            if (lyrics) {
+                setCurrentLyrics(lyrics);
+            }
         } else {
-            setCurrentLyrics(lyricsInfo?.lyricsVersions?.[Provider.Spotify] ?? null);
+            const lyrics = lyricsInfo?.lyricsVersions[Provider.Spotify];
+            console.log("Spotify lyrics", lyrics);
+            if (lyrics) {
+                setCurrentLyrics(lyrics);
+            }
         }
     }, [lyricsInfo]);
 

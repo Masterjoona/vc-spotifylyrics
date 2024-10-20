@@ -32,8 +32,8 @@ export const settings = definePluginSettings({
             { value: "below", label: "Below SpotifyControls", default: true },
         ],
     },
-    LyricsProvier: {
-        description: "Lyrics provider",
+    LyricsProvider: {
+        description: "Where lyrics are fetched from",
         type: OptionType.SELECT,
         options: [
             { value: Provider.Spotify, label: "Spotify (Musixmatch)", default: true },
@@ -56,7 +56,6 @@ export const settings = definePluginSettings({
         ),
     },
 });
-
 
 const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("./native")>;
 

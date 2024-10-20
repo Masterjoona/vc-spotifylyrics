@@ -50,6 +50,7 @@ export async function getLyricsLrclib(track: Track): Promise<LyricsData | null> 
 
     const lyrics = data.syncedLyrics;
     const lines = lyrics.split("\n");
+
     return {
         useLyric: Provider.Lrclib,
         lyricsVersions: {

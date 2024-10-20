@@ -7,12 +7,29 @@
 import { copyWithToast } from "@utils/misc";
 import { FluxDispatcher, Icons, Menu } from "@webpack/common";
 
+import { Provider } from "../types";
 import { useLyrics } from "./util";
+
+const switchProviderMenuItem = (provider: Provider, label: string, currentProvider: Provider | undefined) => (
+    (!currentProvider || currentProvider === provider) && (
+        <Menu.MenuItem
+            key={`switch-provider-${provider.toLowerCase()}`}
+            id={`switch-provider-${provider.toLowerCase()}`}
+            label={label}
+            action={() => {
+                FluxDispatcher.dispatch({
+                    // @ts-ignore
+                    type: "SPOTIFY_LYRICS_PROVIDER_CHANGE",
+                    provider,
+                });
+            }}
+        />
+    )
+);
 
 export function LyricsContextMenu() {
     const { lyricsInfo, currentLyrics, currLrcIndex } = useLyrics();
     const hasAShowingLyric = currLrcIndex !== null && currLrcIndex >= 0;
-
     return (
         <Menu.Menu
             navId="spotify-lyrics-menu"
@@ -30,6 +47,8 @@ export function LyricsContextMenu() {
                     icon={Icons.CopyIcon}
                 />
             )}
+            {switchProviderMenuItem(Provider.Spotify, "Switch to Spotify", lyricsInfo?.useLyric)}
+            {switchProviderMenuItem(Provider.Lrclib, "Switch to LRCLIB", lyricsInfo?.useLyric)}
         </Menu.Menu>
     );
 }

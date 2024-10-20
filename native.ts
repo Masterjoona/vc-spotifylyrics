@@ -5,9 +5,10 @@
  */
 
 import { IpcMainInvokeEvent } from "electron";
+import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { getLyrics } from "./SpotifyAPI";
 
-export async function getLyricsSpotify(_: IpcMainInvokeEvent, trackId: string) {
-    return await getLyrics(trackId);
+export async function getLyricsSpotify(_: IpcMainInvokeEvent, track: Track) {
+    return await getLyrics(track.id);
 }
