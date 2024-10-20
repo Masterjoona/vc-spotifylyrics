@@ -9,12 +9,13 @@ import "./styles.css";
 import { definePluginSettings, Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
-import definePlugin, { OptionType } from "@utils/types";
+import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { Button, showToast, Toasts } from "@webpack/common";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
-import { clearLyricsCache, migrateOldLyrics } from "./api";
+import { clearLyricsCache } from "./api";
 import { Lyrics } from "./components/lyrics";
+import { Provider } from "./types";
 
 
 export const settings = definePluginSettings({
@@ -35,8 +36,8 @@ export const settings = definePluginSettings({
         description: "Lyrics provider",
         type: OptionType.SELECT,
         options: [
-            { value: "lrclib", label: "LRCLIB - opensource", default: true },
-            { value: "musixmatch", label: "Musixmatch - bigger database, english translation" },
+            { value: Provider.Spotify, label: "Spotify (Musixmatch)", default: true },
+            { value: Provider.Lrclib, label: "LRCLIB - opensource" },
         ],
     },
     PurgeLyricsCache: {
@@ -55,6 +56,9 @@ export const settings = definePluginSettings({
         ),
     },
 });
+
+
+const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("./native")>;
 
 export default definePlugin({
     name: "SpotifyLyrics",
@@ -94,6 +98,7 @@ export default definePlugin({
     },
     settings,
     async start() {
-        await migrateOldLyrics();
-    }
+        // await migrateOldLyrics();
+    },
+    getlrc: Native.getLyricsSpotify,
 });

@@ -4,14 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { showNotification } from "@api/Notifications";
-import { PluginNative } from "@utils/types";
 import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { addLyrics, getLyrics } from "../api";
-import { LyricsData, Provider, SyncedLyric } from "../types";
+import { getLyrics } from "../api";
+import { LyricsData, Provider } from "../types";
 
 
 interface PlayerStateMin {
@@ -26,8 +24,6 @@ interface Device {
     is_active: boolean;
 }
 
-
-const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("../native")>;
 
 // Copy from spotifycontrols
 export const SpotifyLrcStore = proxyLazyWebpack(() => {
@@ -68,47 +64,6 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
         },
         // @ts-ignore
         async SPOTIFY_LYRICS_PROVIDER(e: { provider: Provider; }) {
-            if (!store.lyricsInfo) {
-                store.lyricsInfo = {
-                    lrclibLyrics: null,
-                    musixmatchLyrics: null,
-                    englishTranslation: null,
-                    useLyric: e.provider,
-                };
-            }
-
-
-            switch (e.provider) {
-                case Provider.Musixmatch:
-                    {
-                        const newInfo = await handleMusixmatchLyrics(store.track!, store.lyricsInfo);
-                        console.log(newInfo);
-                        if (newInfo) {
-                            store.lyricsInfo = newInfo;
-                        } else {
-                            showNotification({
-                                title: "Lyrics not found",
-                                body: "No lyrics found for this track",
-                                color: "red",
-                                noPersist: true,
-                            });
-                        }
-                    }
-                    break;
-                case Provider.Translated:
-                    {
-                        const newInfo = await handleTranslatedLyrics(store.track!, store.lyricsInfo);
-                        console.log(newInfo);
-                        if (newInfo) store.lyricsInfo = newInfo;
-                    }
-
-                    break;
-                case Provider.Lrclib:
-                    store.lyricsInfo.useLyric = Provider.Lrclib;
-                    break;
-                default:
-                    break;
-            }
             console.log("New lyrics info:", store.lyricsInfo);
             store.emitChange();
         }
@@ -116,52 +71,4 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
     return store;
 });
 
-async function handleMusixmatchLyrics(track: Track, lyricsInfo: LyricsData): Promise<LyricsData | undefined> {
-    if (lyricsInfo?.musixmatchLyrics) {
-        lyricsInfo.useLyric = Provider.Musixmatch;
-        await addLyrics(track, lyricsInfo);
-        return lyricsInfo;
-    }
 
-    const resp = await Native.fetchLyrics(track!);
-    if (!resp) return;
-
-    const synced = await Native.getSyncedLyrics(resp);
-    if (!synced) return;
-
-    lyricsInfo.musixmatchLyrics = synced;
-    lyricsInfo.useLyric = Provider.Musixmatch;
-    lyricsInfo.musixmatchTrackId = resp?.["matcher.track.get"]?.message?.body?.track?.track_id;
-
-    await addLyrics(track!, lyricsInfo!);
-    return lyricsInfo;
-}
-
-async function handleTranslatedLyrics(track: Track, lyricsInfo: LyricsData): Promise<LyricsData | undefined> {
-    if (lyricsInfo?.englishTranslation) {
-        lyricsInfo.useLyric = Provider.Translated;
-        await addLyrics(track, lyricsInfo);
-        return lyricsInfo;
-    }
-
-    const translation = await Native.getTranslationLyrics(lyricsInfo?.musixmatchTrackId!);
-    if (!translation) {
-        lyricsInfo.englishTranslation = [];
-        return;
-    }
-
-    const englishTranslations: SyncedLyric[] = lyricsInfo.musixmatchLyrics!.map(originalLyric => {
-        const match = translation.find(t => t.matchedLine === originalLyric.text);
-        return match ? {
-            text: match.translation,
-            time: originalLyric.time,
-            lrcTime: originalLyric.lrcTime
-        } : null;
-    }).filter(Boolean) as SyncedLyric[];
-
-    lyricsInfo.englishTranslation = englishTranslations;
-    lyricsInfo.useLyric = Provider.Translated;
-
-    await addLyrics(track, lyricsInfo);
-    return lyricsInfo;
-}

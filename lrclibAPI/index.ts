@@ -27,7 +27,7 @@ function lyricTimeToSeconds(time: string) {
     return minutes * 60 + seconds;
 }
 
-export async function fetchLrclibLyrics(track: Track): Promise<LyricsData | null> {
+export async function getLyricsLrclib(track: Track): Promise<LyricsData | null> {
     const info = {
         track_name: track.name,
         artist_name: track.artists[0].name,
@@ -51,15 +51,16 @@ export async function fetchLrclibLyrics(track: Track): Promise<LyricsData | null
     const lyrics = data.syncedLyrics;
     const lines = lyrics.split("\n");
     return {
-        lrclibLyrics: lines.map((line: string) => {
-            const [time, text] = line.split("] ");
-            return {
-                time: lyricTimeToSeconds(time),
-                text: text || null,
-                lrcTime: time.slice(1)
-            };
-        }),
         useLyric: Provider.Lrclib,
-        englishTranslation: null
-    } as LyricsData;
+        lyricsVersions: {
+            LRCLIB: lines.map(line => {
+                const [lrcTime, text] = line.split("]");
+                return {
+                    lrcTime,
+                    time: lyricTimeToSeconds(lrcTime),
+                    text: text.trim() || null
+                };
+            })
+        }
+    };
 }

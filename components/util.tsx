@@ -48,13 +48,10 @@ export function useLyrics() {
     const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement>[]>([]);
 
     useEffect(() => {
-        console.log("Current lyrics info:", lyricsInfo);
-        if (lyricsInfo?.useLyric === Provider.Musixmatch) {
-            setCurrentLyrics(lyricsInfo.musixmatchLyrics ?? []);
-        } else if (lyricsInfo?.useLyric === Provider.Translated) {
-            setCurrentLyrics(lyricsInfo.englishTranslation ?? []);
+        if (lyricsInfo?.useLyric === Provider.Lrclib) {
+            setCurrentLyrics(lyricsInfo.lyricsVersions?.[Provider.Lrclib] ?? null);
         } else {
-            setCurrentLyrics(lyricsInfo?.lrclibLyrics ?? []);
+            setCurrentLyrics(lyricsInfo?.lyricsVersions?.[Provider.Spotify] ?? null);
         }
     }, [lyricsInfo]);
 

@@ -11,20 +11,11 @@ export interface SyncedLyric {
 }
 
 export enum Provider {
-    Lrclib = "lrclib",
-    Musixmatch = "musixmatch",
-    Translated = "translated"
+    Lrclib = "LRCLIB",
+    Spotify = "Spotify",
 }
 
 export interface LyricsData {
-    lrclibLyrics: SyncedLyric[] | null;
-    musixmatchLyrics: SyncedLyric[] | null;
-    englishTranslation: SyncedLyric[] | null;
+    lyricsVersions: Partial<Record<Provider, SyncedLyric[] | null>>;
     useLyric: Provider;
-    musixmatchTrackId?: number;
-}
-
-export interface Translation {
-    translation: string;
-    matchedLine: string;
 }

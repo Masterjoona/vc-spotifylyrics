@@ -9,22 +9,21 @@ import { PluginNative } from "@utils/types";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { settings } from ".";
-import { fetchLrclibLyrics } from "./lrclib";
-import { LyricsData, Provider, SyncedLyric } from "./types";
+import { getLyricsLrclib } from "./lrclibAPI";
+import { LyricsData, Provider } from "./types";
 
 
 const LyricsCacheKey = "SpotifyLyricsCache";
-interface NullLyricCache {
-    [key: string]: {
-        Lrclib: boolean;
-        Musixmatch: boolean;
-    };
-}
-let nullLyricCache = {} as NullLyricCache;
-
-
 const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("./native")>;
 
+interface NullLyricCache {
+    [key: string]: {
+        Lrclib?: boolean;
+        Spotify?: boolean;
+    };
+}
+
+let nullLyricCache = {} as NullLyricCache;
 
 export async function getLyrics(track: Track | null): Promise<LyricsData | null> {
     if (!track) return null;
@@ -34,31 +33,32 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | null>
         return cached[cacheKey];
     }
 
-    if (nullLyricCache[cacheKey] && nullLyricCache[cacheKey].Lrclib && nullLyricCache[cacheKey].Musixmatch) {
+    if (nullLyricCache[cacheKey] && nullLyricCache[cacheKey].Lrclib && nullLyricCache[cacheKey].Spotify) {
         return null;
     }
 
     const provider = settings.store.LyricsProvier;
 
-    if (provider === "musixmatch") {
-        const resp = await Native.fetchLyrics(track);
-        if (!resp) {
-            nullLyricCache[cacheKey] = { ...nullLyricCache[cacheKey], Musixmatch: true };
+    if (provider === Provider.Spotify) {
+        const lyrics = await Native.getLyricsSpotify(track.id);
+        if (!lyrics) {
+            nullLyricCache[cacheKey] = { ...nullLyricCache[cacheKey], Spotify: true };
             return null;
         }
 
-        const synced = await Native.getSyncedLyrics(resp);
-        const lyricInfo = {
-            musixmatchLyrics: synced,
-            useLyric: Provider.Musixmatch,
-            englishTranslation: null,
-            musixmatchTrackId: resp?.["matcher.track.get"]?.message?.body?.track?.track_id,
-        } as LyricsData;
-        await DataStore.set(LyricsCacheKey, { ...cached, [cacheKey]: lyricInfo });
-        return lyricInfo;
+        const lyricsInfo = {
+            useLyric: Provider.Spotify,
+            lyricsVersions: {
+                [Provider.Spotify]: lyrics
+            }
+        };
+
+        await DataStore.set(LyricsCacheKey, { ...cached, [cacheKey]: lyricsInfo });
+        return lyricsInfo;
+
     }
 
-    const lyricsInfo = await fetchLrclibLyrics(track);
+    const lyricsInfo = await getLyricsLrclib(track);
     if (!lyricsInfo) {
         nullLyricCache[cacheKey] = { ...nullLyricCache[cacheKey], Lrclib: true };
         return null;
@@ -74,6 +74,11 @@ export async function clearLyricsCache() {
     await DataStore.set(LyricsCacheKey, {});
 }
 
+export async function addLyrics(track: Track, lyricsInfo: LyricsData) {
+    await DataStore.set(LyricsCacheKey, { ...await DataStore.get(LyricsCacheKey), [track.id]: lyricsInfo });
+}
+
+/*
 export async function migrateOldLyrics() {
     const oldLyrics = await DataStore.get(LyricsCacheKey) as Record<string, SyncedLyric[] | null>;
     if (!oldLyrics) return;
@@ -93,7 +98,4 @@ export async function migrateOldLyrics() {
     }, {} as Record<string, LyricsData>);
     await DataStore.set(LyricsCacheKey, newLyrics);
 }
-
-export async function addLyrics(track: Track, lyricsInfo: LyricsData) {
-    await DataStore.set(LyricsCacheKey, { ...await DataStore.get(LyricsCacheKey), [track.id]: lyricsInfo });
-}
+*/

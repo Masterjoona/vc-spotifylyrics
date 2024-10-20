@@ -43,7 +43,7 @@ function LyricsDisplay() {
             </div >
         );
     }
-    console.log(currentLyrics);
+
     return (
         <div
             className="vc-spotify-lyrics"
