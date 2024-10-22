@@ -11,8 +11,8 @@ import { Flux, FluxDispatcher } from "@webpack/common";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { getLyrics, updateLyrics } from "../api";
-import { getLyricsLrclib } from "../lrclibAPI";
-import { LyricsData, Provider } from "../types";
+import { getLyricsLrclib } from "../providers/lrclibAPI";
+import { LyricsData, Provider } from "../providers/types";
 
 interface PlayerStateMin {
     track: Track | null;

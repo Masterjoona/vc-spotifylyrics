@@ -9,8 +9,8 @@ import { PluginNative } from "@utils/types";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { settings } from ".";
-import { getLyricsLrclib } from "./lrclibAPI";
-import { LyricsData, Provider, SyncedLyric } from "./types";
+import { getLyricsLrclib } from "./providers/lrclibAPI";
+import { LyricsData, Provider, SyncedLyric } from "./providers/types";
 
 
 const LyricsCacheKey = "SpotifyLyricsCacheNew";

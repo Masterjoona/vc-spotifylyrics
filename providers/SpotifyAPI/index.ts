@@ -5,7 +5,19 @@
  */
 
 import { LyricsData, Provider } from "../types";
-import { LyricsAPIResp } from "./types";
+
+interface LyricsAPIResp {
+    error: boolean;
+    syncType: string;
+    lines: Line[];
+}
+
+interface Line {
+    startTimeMs: string;
+    words: string;
+    syllables: any[];
+    endTimeMs: string;
+}
 
 const formatTimes = (ms: string) => {
     const seconds = Number(ms) / 1000;

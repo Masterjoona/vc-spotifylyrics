@@ -15,7 +15,7 @@ import { Player } from "plugins/spotifyControls/PlayerComponent";
 
 import { clearLyricsCache } from "./api";
 import { Lyrics } from "./components/lyrics";
-import { Provider } from "./types";
+import { Provider } from "./providers/types";
 
 
 export const settings = definePluginSettings({

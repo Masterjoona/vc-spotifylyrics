@@ -8,7 +8,7 @@ import { classNameFactory } from "@api/Styles";
 import { findByPropsLazy } from "@webpack";
 import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
 
-import { Provider, SyncedLyric } from "../types";
+import { Provider, SyncedLyric } from "../providers/types";
 import { SpotifyLrcStore } from "./store";
 
 export const scrollClasses = findByPropsLazy("auto", "customTheme");

@@ -7,7 +7,7 @@
 import { copyWithToast } from "@utils/misc";
 import { FluxDispatcher, Icons, Menu } from "@webpack/common";
 
-import { Provider } from "../types";
+import { Provider } from "../providers/types";
 import { useLyrics } from "./util";
 
 const switchProviderMenuItem = (provider: Provider, label: string, currentProvider: Provider | undefined) => (
