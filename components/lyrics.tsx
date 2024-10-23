@@ -7,12 +7,11 @@
 import { openModal } from "@utils/modal";
 import { ContextMenuApi, React, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
 
-import { settings } from "..";
+import settings from "../settings";
 import { LyricsContextMenu } from "./ctxMenu";
 import { LyricsModal } from "./modal";
 import { SpotifyLrcStore } from "./store";
 import { cl, NoteSvg, useLyrics } from "./util";
-
 
 function LyricsDisplay() {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);

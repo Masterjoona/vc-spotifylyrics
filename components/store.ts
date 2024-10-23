@@ -78,25 +78,18 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
         // @ts-ignore
         async SPOTIFY_LYRICS_PROVIDER_CHANGE(e: { provider: Provider; }) {
             const currentInfo = await getLyrics(store.track);
-            if (currentInfo?.useLyric === e.provider) return;
+            const { provider } = e;
+            if (currentInfo?.useLyric === provider) return;
 
-            if (currentInfo?.lyricsVersions[e.provider]) {
-                store.lyricsInfo = {
-                    ...currentInfo,
-                    useLyric: e.provider
-                };
+            if (currentInfo?.lyricsVersions[provider]) {
+                store.lyricsInfo = { ...currentInfo, useLyric: provider };
 
-                await updateLyrics(
-                    store.track!.id,
-                    currentInfo.lyricsVersions[e.provider]!,
-                    e.provider
-                );
-
+                await updateLyrics(store.track!.id, currentInfo.lyricsVersions[provider]!, provider);
                 store.emitChange();
                 return;
             }
 
-            if (e.provider === Provider.Translated || e.provider === Provider.Romanized) {
+            if (provider === Provider.Translated || provider === Provider.Romanized) {
                 if (!currentInfo?.useLyric) {
                     showNotification({
                         color: "#eed202",
@@ -120,7 +113,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                     return;
                 }
 
-                if (e.provider === Provider.Romanized && !romanized) {
+                if (provider === Provider.Romanized && !romanized) {
                     console.error("Failed to romanize lyrics");
                     showNotification({
                         color: "#eed202",

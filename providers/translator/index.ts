@@ -5,6 +5,7 @@
  */
 
 import { containsNonLatinChars } from "../../components/util";
+import settings from "../../settings";
 import { LyricsData, Provider, SyncedLyric } from "../types";
 
 // stolen from src\plugins\translate\utils.ts
@@ -49,6 +50,7 @@ export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provi
         return [null, null];
 
     const nonDuplicatedLyrics = lyrics.filter((lyric, index, self) => self.findIndex(l => l.text === lyric.text) === index);
+    const language = settings.store.TranslateTo;
 
     const translatedLyricsWithRomanized = await Promise.all(
         nonDuplicatedLyrics.map(async lyric => {
@@ -57,7 +59,7 @@ export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provi
             if (!containsNonLatinChars(lyric.text))
                 return [lyric.text, lyric.text, lyric.text];
 
-            const translation = await googleTranslate(lyric.text, "en");
+            const translation = await googleTranslate(lyric.text, language);
 
             if (!translation || translation.sentences.length === 0)
                 return [lyric.text, null, null];

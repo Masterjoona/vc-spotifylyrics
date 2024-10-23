@@ -5,17 +5,15 @@
  */
 
 import { DataStore } from "@api/index";
-import { PluginNative } from "@utils/types";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { settings } from ".";
 import { getLyricsLrclib } from "./providers/lrclibAPI";
 import { getLyricsSpotify } from "./providers/SpotifyAPI";
 import { LyricsData, Provider, SyncedLyric } from "./providers/types";
+import settings from "./settings";
 
 
 const LyricsCacheKey = "SpotifyLyricsCacheNew";
-const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("./native")>;
 
 interface NullLyricCache {
     [key: string]: {
