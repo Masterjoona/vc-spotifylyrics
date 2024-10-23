@@ -67,6 +67,13 @@ export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provi
             if (translation.sentences.length === 2)
                 return [lyric.text, translation.sentences[0].trans, translation.sentences[1].src_translit];
 
+            if (translation.sentences.length >= 2) {
+                const { sentences } = translation;
+                const last = sentences[sentences.length - 1];
+                const translatedText = sentences.slice(0, -1).map(sentence => sentence.trans).join();
+                return [lyric.text, translatedText, last.src_translit];
+            }
+
             return [lyric.text, translation.sentences[0].trans, null];
         })
     );
@@ -76,12 +83,12 @@ export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provi
 
     const translated = lyrics.map(lyric => ({
         ...lyric,
-        text: translatedLyricsWithRomanized.find(transes => transes[0] === lyric.text)?.[1] ?? lyric.text
+        text: translatedLyricsWithRomanized.find(mapping => mapping[0] === lyric.text)?.[1] ?? lyric.text
     }));
 
     const romanized = lyrics.map(lyric => ({
         ...lyric,
-        text: translatedLyricsWithRomanized.find(transes => transes[0] === lyric.text)?.[2] ?? lyric.text
+        text: translatedLyricsWithRomanized.find(mapping => mapping[0] === lyric.text)?.[2] ?? lyric.text
     }));
 
     return [translated, romanized];
