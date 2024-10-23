@@ -20,7 +20,11 @@ function ModalHeaderContent({ track }: { track: Track; }) {
                         src={track.album.image.url}
                         alt={track.album.name}
                         className={cl("album-image")}
-                        onClick={() => openImageModal(track.album.image.url)}
+                        onClick={() => openImageModal({
+                            url: track.album.image.url,
+                            width: track.album.image.width,
+                            height: track.album.image.height,
+                        })}
                     />
                 )}
                 <div>

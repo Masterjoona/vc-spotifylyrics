@@ -28,7 +28,7 @@ const formatTimes = (ms: string) => {
     };
 };
 
-export async function getLyrics(trackId: string): Promise<LyricsData | null> {
+export async function getLyricsSpotify(trackId: string): Promise<LyricsData | null> {
     const resp = await fetch("https://spotify-lyrics-api-pi.vercel.app/?trackid=" + trackId);
     if (!resp.ok) return null;
 
@@ -40,9 +40,10 @@ export async function getLyrics(trackId: string): Promise<LyricsData | null> {
         useLyric: Provider.Spotify,
         lyricsVersions: {
             Spotify: lyrics.map(line => {
+                const trimmedText = line.words.trim();
                 return {
                     ...formatTimes(line.startTimeMs),
-                    text: line.words.trim() || null
+                    text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
                 };
             })
         }

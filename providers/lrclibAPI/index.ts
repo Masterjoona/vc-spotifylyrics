@@ -56,10 +56,11 @@ export async function getLyricsLrclib(track: Track): Promise<LyricsData | null> 
         lyricsVersions: {
             LRCLIB: lines.map(line => {
                 const [lrcTime, text] = line.split("]");
+                const trimmedText = text.trim();
                 return {
                     lrcTime,
                     time: lyricTimeToSeconds(lrcTime),
-                    text: text.trim() || null
+                    text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
                 };
             })
         }

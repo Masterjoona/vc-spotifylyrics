@@ -29,13 +29,10 @@ function LyricsDisplay() {
         return cl(diff > 0 ? "next" : "prev");
     };
 
-
     if (!lyricsInfo) {
         return ShowMusicNoteOnNoLyrics && (
             <div className="vc-spotify-lyrics"
-                onContextMenu={e => {
-                    ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />);
-                }}
+                onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
             >
                 <TooltipContainer text="No synced lyrics found">
                     {NoteSvg(cl("music-note"))}
@@ -48,9 +45,7 @@ function LyricsDisplay() {
         <div
             className="vc-spotify-lyrics"
             onClick={openLyricsModal}
-            onContextMenu={e => {
-                ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />);
-            }}
+            onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
         >
             <div>
                 {currentLyrics?.map((line, i) => (

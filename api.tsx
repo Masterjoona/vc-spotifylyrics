@@ -10,6 +10,7 @@ import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { settings } from ".";
 import { getLyricsLrclib } from "./providers/lrclibAPI";
+import { getLyricsSpotify } from "./providers/SpotifyAPI";
 import { LyricsData, Provider, SyncedLyric } from "./providers/types";
 
 
@@ -54,7 +55,7 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | null>
     };
 
     if (provider === Provider.Spotify) {
-        return await getAndCacheLyrics(Provider.Spotify, () => Native.getLyricsSpotify(track));
+        return await getAndCacheLyrics(Provider.Spotify, () => getLyricsSpotify(track.id));
     }
 
     return await getAndCacheLyrics(Provider.Lrclib, () => getLyricsLrclib(track));
@@ -65,7 +66,7 @@ export async function clearLyricsCache() {
     await DataStore.set(LyricsCacheKey, {});
 }
 
-export async function updateLyrics(trackId: string, lyrics: SyncedLyric[], provider: Provider) {
+export async function updateLyrics(trackId: string, newLyrics: SyncedLyric[], useProvider: Provider, toProvider?: Provider) {
     const cache = await DataStore.get(LyricsCacheKey) as Record<string, LyricsData | null>;
     const current = cache[trackId];
 
@@ -73,10 +74,10 @@ export async function updateLyrics(trackId: string, lyrics: SyncedLyric[], provi
         {
             ...cache, [trackId]: {
                 ...current,
-                useLyric: provider,
+                useLyric: useProvider,
                 lyricsVersions: {
                     ...current?.lyricsVersions,
-                    [provider]: lyrics
+                    [toProvider || useProvider]: newLyrics
                 }
             }
         }

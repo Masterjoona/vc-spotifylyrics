@@ -10,22 +10,24 @@ import { FluxDispatcher, Icons, Menu } from "@webpack/common";
 import { Provider } from "../providers/types";
 import { useLyrics } from "./util";
 
-const switchProviderMenuItem = (provider: Provider, label: string, currentProvider: Provider | undefined) => (
-    (!currentProvider || currentProvider === provider) && (
-        <Menu.MenuItem
-            key={`switch-provider-${provider.toLowerCase()}`}
-            id={`switch-provider-${provider.toLowerCase()}`}
-            label={label}
-            action={() => {
-                FluxDispatcher.dispatch({
-                    // @ts-ignore
-                    type: "SPOTIFY_LYRICS_PROVIDER_CHANGE",
-                    provider,
-                });
-            }}
-        />
-    )
-);
+function ProviderMenuItem(toProvider: Provider, currentProvider?: Provider) {
+    return (
+        (!currentProvider || currentProvider !== toProvider) && (
+            <Menu.MenuItem
+                key={`switch-provider-${toProvider.toLowerCase()}`}
+                id={`switch-provider-${toProvider.toLowerCase()}`}
+                label={`Switch to ${toProvider}`}
+                action={() => {
+                    FluxDispatcher.dispatch({
+                        // @ts-ignore
+                        type: "SPOTIFY_LYRICS_PROVIDER_CHANGE",
+                        provider: toProvider,
+                    });
+                }}
+            />
+        )
+    );
+}
 
 export function LyricsContextMenu() {
     const { lyricsInfo, currentLyrics, currLrcIndex } = useLyrics();
@@ -47,8 +49,16 @@ export function LyricsContextMenu() {
                     icon={Icons.CopyIcon}
                 />
             )}
-            {switchProviderMenuItem(Provider.Spotify, "Switch to Spotify", lyricsInfo?.useLyric)}
-            {switchProviderMenuItem(Provider.Lrclib, "Switch to LRCLIB", lyricsInfo?.useLyric)}
+            <Menu.MenuItem
+                navId="spotify-lyrics-provider"
+                id="spotify-lyrics-provider"
+                label="Lyrics Provider"
+            >
+                {ProviderMenuItem(Provider.Spotify, lyricsInfo?.useLyric)}
+                {ProviderMenuItem(Provider.Lrclib, lyricsInfo?.useLyric)}
+                {ProviderMenuItem(Provider.Translated, lyricsInfo?.useLyric)}
+                {ProviderMenuItem(Provider.Romanized, lyricsInfo?.useLyric)}
+            </Menu.MenuItem>
         </Menu.Menu>
     );
 }

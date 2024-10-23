@@ -9,7 +9,7 @@ import "./styles.css";
 import { definePluginSettings, Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
-import definePlugin, { OptionType, PluginNative } from "@utils/types";
+import definePlugin, { OptionType } from "@utils/types";
 import { Button, showToast, Toasts } from "@webpack/common";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
@@ -57,8 +57,6 @@ export const settings = definePluginSettings({
     },
 });
 
-const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("./native")>;
-
 export default definePlugin({
     name: "SpotifyLyrics",
     authors: [Devs.Joona],
@@ -99,5 +97,4 @@ export default definePlugin({
     async start() {
         // await migrateOldLyrics();
     },
-    getlrc: Native.getLyricsSpotify,
 });

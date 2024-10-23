@@ -8,7 +8,7 @@ import { classNameFactory } from "@api/Styles";
 import { findByPropsLazy } from "@webpack";
 import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
 
-import { Provider, SyncedLyric } from "../providers/types";
+import { SyncedLyric } from "../providers/types";
 import { SpotifyLrcStore } from "./store";
 
 export const scrollClasses = findByPropsLazy("auto", "customTheme");
@@ -24,10 +24,15 @@ export function NoteSvg(className: string) {
 }
 
 const calculateIndexes = (lyrics: SyncedLyric[], position: number) => {
-    const inSeconds = position / 1000;
-    const currentIndex = lyrics.findIndex(l => l.time > inSeconds && l.time < inSeconds + 8) - 1;
-    const nextLyric = lyrics.findIndex(l => l.time >= inSeconds);
+    const posInSec = position / 1000;
+    const currentIndex = lyrics.findIndex(l => l.time - 0.1 > posInSec && l.time < posInSec + 8) - 1;
+    const nextLyric = lyrics.findIndex(l => l.time >= posInSec);
     return [currentIndex, nextLyric];
+};
+
+
+export const containsNonLatinChars = (str: string) => {
+    return /[^\u0000-\u007F]+/.test(str);
 };
 
 export function useLyrics() {
@@ -48,18 +53,9 @@ export function useLyrics() {
     const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement>[]>([]);
 
     useEffect(() => {
-        if (lyricsInfo?.useLyric === Provider.Lrclib) {
-            const lyrics = lyricsInfo.lyricsVersions[Provider.Lrclib];
-            console.log("Lrclib lyrics", lyrics);
-            if (lyrics) {
-                setCurrentLyrics(lyrics);
-            }
-        } else {
-            const lyrics = lyricsInfo?.lyricsVersions[Provider.Spotify];
-            console.log("Spotify lyrics", lyrics);
-            if (lyrics) {
-                setCurrentLyrics(lyrics);
-            }
+        const lyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
+        if (lyrics) {
+            setCurrentLyrics(lyrics);
         }
     }, [lyricsInfo]);
 
