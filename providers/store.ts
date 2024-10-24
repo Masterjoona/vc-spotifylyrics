@@ -10,10 +10,10 @@ import { Flux, FluxDispatcher } from "@webpack/common";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { getLyrics, updateLyrics } from "../api";
-import { getLyricsLrclib } from "../providers/lrclibAPI";
-import { getLyricsSpotify } from "../providers/SpotifyAPI";
-import { translateLyrics } from "../providers/translator";
-import { LyricsData, Provider } from "../providers/types";
+import { getLyricsLrclib } from "./lrclibAPI";
+import { getLyricsSpotify } from "./SpotifyAPI";
+import { translateLyrics } from "./translator";
+import { LyricsData, Provider } from "./types";
 
 interface PlayerStateMin {
     track: Track | null;

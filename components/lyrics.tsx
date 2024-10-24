@@ -7,10 +7,10 @@
 import { openModal } from "@utils/modal";
 import { ContextMenuApi, React, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
 
+import { SpotifyLrcStore } from "../providers/store";
 import settings from "../settings";
 import { LyricsContextMenu } from "./ctxMenu";
 import { LyricsModal } from "./modal";
-import { SpotifyLrcStore } from "./store";
 import { cl, NoteSvg, useLyrics } from "./util";
 
 function LyricsDisplay() {
