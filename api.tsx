@@ -95,3 +95,7 @@ export async function removeTranslations() {
 
     await DataStore.set(LyricsCacheKey, newCache);
 }
+
+export async function removeOldData() {
+    await DataStore.set("SpotifyLyricsCache", {});
+}

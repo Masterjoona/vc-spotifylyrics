@@ -35,7 +35,7 @@ async function googleTranslate(text: string, targetLang: string): Promise<Google
         source: "input",
         // query, duh
         q: text
-    }) + "&dt=rm";
+    }) + "&dt=rm"; // romanization
 
     const res = await fetch(url);
     if (!res.ok)
