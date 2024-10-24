@@ -95,7 +95,23 @@ export async function removeTranslations() {
 
     await DataStore.set(LyricsCacheKey, newCache);
 }
+export async function migrateOldLyrics() {
+    const oldCache = await DataStore.get("SpotifyLyricsCache");
+    if (!Object.entries(oldCache).length) return;
 
-export async function removeOldData() {
+    const filteredCache = Object.entries(oldCache).filter(lrc => lrc[1]);
+    const result = {};
+
+    filteredCache.forEach(([trackId, lyrics]) => {
+        result[trackId] = {
+            lyricsVersions: {
+                // @ts-ignore
+                LRCLIB: lyrics.map(({ time, text }) => ({ time, text }))
+            },
+            useLyric: "LRCLIB"
+        };
+    });
+
+    await DataStore.set(LyricsCacheKey, result);
     await DataStore.set("SpotifyLyricsCache", {});
 }

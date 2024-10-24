@@ -12,7 +12,7 @@ import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
-import { removeOldData } from "./api";
+import { migrateOldLyrics } from "./api";
 import { Lyrics } from "./components/lyrics";
 import settings from "./settings";
 
@@ -55,6 +55,6 @@ export default definePlugin({
     },
     settings,
     async start() {
-        await removeOldData();
+        await migrateOldLyrics();
     },
 });
