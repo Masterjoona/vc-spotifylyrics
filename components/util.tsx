@@ -8,8 +8,8 @@ import { classNameFactory } from "@api/Styles";
 import { findByPropsLazy } from "@webpack";
 import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
 
-import { SyncedLyrics } from "./api";
-import { SpotifyLrcStore } from "./store";
+import { SpotifyLrcStore } from "../providers/store";
+import { SyncedLyric } from "../providers/types";
 
 export const scrollClasses = findByPropsLazy("auto", "customTheme");
 
@@ -23,21 +23,21 @@ export function NoteSvg(className: string) {
     );
 }
 
-const calculateIndexes = (lyrics: SyncedLyrics[], position: number) => {
-    const inSeconds = position / 1000;
-    const currentIndex = lyrics.findIndex(l => l.time > inSeconds && l.time < inSeconds + 8) - 1;
-    const nextLyric = lyrics.findIndex(l => l.time >= inSeconds);
+const calculateIndexes = (lyrics: SyncedLyric[], position: number) => {
+    const posInSec = position / 1000;
+    const currentIndex = lyrics.findIndex(l => l.time - 0.1 > posInSec && l.time < posInSec + 8) - 1;
+    const nextLyric = lyrics.findIndex(l => l.time >= posInSec);
     return [currentIndex, nextLyric];
 };
 
 export function useLyrics() {
-    const [track, storePosition, isPlaying, lyrics] = useStateFromStores(
+    const [track, storePosition, isPlaying, lyricsInfo] = useStateFromStores(
         [SpotifyLrcStore],
         () => [
             SpotifyLrcStore.track!,
             SpotifyLrcStore.mPosition,
             SpotifyLrcStore.isPlaying,
-            SpotifyLrcStore.lyrics,
+            SpotifyLrcStore.lyricsInfo
         ]
     );
 
@@ -46,19 +46,22 @@ export function useLyrics() {
     const [position, setPosition] = useState(storePosition);
     const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement>[]>([]);
 
-    useEffect(() => {
-        if (lyrics) {
-            setLyricRefs(lyrics.map(() => React.createRef()));
-        }
-    }, [lyrics]);
+    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
     useEffect(() => {
-        if (lyrics && position) {
-            const [currentIndex, nextLyric] = calculateIndexes(lyrics, position);
+        if (currentLyrics) {
+            setLyricRefs(currentLyrics.map(() => React.createRef()));
+        }
+    }, [currentLyrics]);
+
+
+    useEffect(() => {
+        if (currentLyrics && position) {
+            const [currentIndex, nextLyric] = calculateIndexes(currentLyrics, position);
             setCurrLrcIndex(currentIndex);
             setNextLyric(nextLyric);
         }
-    }, [lyrics, position]);
+    }, [currentLyrics, position]);
 
     useEffect(() => {
         if (currLrcIndex !== null) {
@@ -82,5 +85,5 @@ export function useLyrics() {
         }
     }, [storePosition, isPlaying]);
 
-    return { track, lyrics, lyricRefs, currLrcIndex, nextLyric };
+    return { track, lyricsInfo, lyricRefs, currLrcIndex, nextLyric };
 }

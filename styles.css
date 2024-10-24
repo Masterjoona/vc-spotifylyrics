@@ -4,9 +4,6 @@
     text-align: center;
     overflow: hidden;
     max-height: 60px;
-}
-
-.vc-spotify-lyrics-pointer {
     cursor: pointer;
 }
 

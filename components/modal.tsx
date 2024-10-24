@@ -11,6 +11,12 @@ import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { cl, NoteSvg, scrollClasses, useLyrics } from "./util";
 
+const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
 function ModalHeaderContent({ track }: { track: Track; }) {
     return (
         <ModalHeader>
@@ -20,7 +26,11 @@ function ModalHeaderContent({ track }: { track: Track; }) {
                         src={track.album.image.url}
                         alt={track.album.name}
                         className={cl("album-image")}
-                        onClick={() => openImageModal(track.album.image.url)}
+                        onClick={() => openImageModal({
+                            url: track.album.image.url,
+                            width: track.album.image.width,
+                            height: track.album.image.height,
+                        })}
                     />
                 )}
                 <div>
@@ -34,15 +44,16 @@ function ModalHeaderContent({ track }: { track: Track; }) {
 }
 
 export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
-    const { track, lyrics, lyricRefs, currLrcIndex } = useLyrics();
+    const { track, lyricsInfo, lyricRefs, currLrcIndex } = useLyrics();
+    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
     return (
         <ModalRoot {...rootProps}>
             <ModalHeaderContent track={track} />
             <ModalContent>
                 <div className={cl("lyrics-modal-container") + ` ${scrollClasses.auto}`}>
-                    {lyrics ? (
-                        lyrics.map((line, i) => (
+                    {currentLyrics ? (
+                        currentLyrics.map((line, i) => (
                             <Text
                                 variant={currLrcIndex === i ? "text-md/semibold" : "text-sm/normal"}
                                 selectable
@@ -51,7 +62,7 @@ export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
                                 ref={lyricRefs[i]}
                             >
                                 <span className={cl("modal-timestamp")} onClick={() => SpotifyStore.seek(line.time * 1000)}>
-                                    {line.lrcTime}
+                                    {formatTime(line.time)}
                                 </span>
                                 {line.text || NoteSvg(cl("modal-note"))}
                             </Text>

@@ -6,46 +6,16 @@
 
 import "./styles.css";
 
-import { definePluginSettings, Settings } from "@api/Settings";
+import { Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Devs } from "@utils/constants";
-import definePlugin, { OptionType } from "@utils/types";
-import { Button, showToast, Toasts } from "@webpack/common";
+import definePlugin from "@utils/types";
 import { Player } from "plugins/spotifyControls/PlayerComponent";
 
-import { clearLyricsCache } from "./api";
-import { Lyrics } from "./lyrics";
+import { migrateOldLyrics } from "./api";
+import { Lyrics } from "./components/lyrics";
+import settings from "./settings";
 
-export const settings = definePluginSettings({
-    ShowMusicNoteOnNoLyrics: {
-        description: "Show a music note icon when no lyrics are found",
-        type: OptionType.BOOLEAN,
-        default: true,
-    },
-    LyricsPosition: {
-        description: "Position of the lyrics",
-        type: OptionType.SELECT,
-        options: [
-            { value: "above", label: "Above SpotifyControls" },
-            { value: "below", label: "Below SpotifyControls", default: true },
-        ],
-    },
-    PurgeLyricsCache: {
-        description: "Purge the lyrics cache",
-        type: OptionType.COMPONENT,
-        component: () => (
-            <Button
-                color={Button.Colors.RED}
-                onClick={() => {
-                    clearLyricsCache();
-                    showToast("Lyrics cache purged", Toasts.Type.SUCCESS);
-                }}
-            >
-                Purge Cache
-            </Button>
-        ),
-    },
-});
 
 export default definePlugin({
     name: "SpotifyLyrics",
@@ -84,4 +54,7 @@ export default definePlugin({
         );
     },
     settings,
+    async start() {
+        await migrateOldLyrics();
+    },
 });
