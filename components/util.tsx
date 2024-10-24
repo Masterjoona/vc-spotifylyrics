@@ -30,11 +30,6 @@ const calculateIndexes = (lyrics: SyncedLyric[], position: number) => {
     return [currentIndex, nextLyric];
 };
 
-
-export const containsNonLatinChars = (str: string) => {
-    return /[^\u0000-\u007F]+/.test(str);
-};
-
 export function useLyrics() {
     const [track, storePosition, isPlaying, lyricsInfo] = useStateFromStores(
         [SpotifyLrcStore],
@@ -49,15 +44,9 @@ export function useLyrics() {
     const [currLrcIndex, setCurrLrcIndex] = useState<number | null>(null);
     const [nextLyric, setNextLyric] = useState<number | null>(null);
     const [position, setPosition] = useState(storePosition);
-    const [currentLyrics, setCurrentLyrics] = useState<SyncedLyric[] | null>(null);
     const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement>[]>([]);
 
-    useEffect(() => {
-        const lyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
-        if (lyrics) {
-            setCurrentLyrics(lyrics);
-        }
-    }, [lyricsInfo]);
+    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
     useEffect(() => {
         if (currentLyrics) {
@@ -96,5 +85,5 @@ export function useLyrics() {
         }
     }, [storePosition, isPlaying]);
 
-    return { track, lyricsInfo, lyricRefs, currLrcIndex, currentLyrics, nextLyric };
+    return { track, lyricsInfo, lyricRefs, currLrcIndex, nextLyric };
 }

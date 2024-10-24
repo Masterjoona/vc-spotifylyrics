@@ -15,9 +15,9 @@ import { cl, NoteSvg, useLyrics } from "./util";
 
 function LyricsDisplay() {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
-    const { lyricsInfo, lyricRefs, currentLyrics, currLrcIndex } = useLyrics();
+    const { lyricsInfo, lyricRefs, currLrcIndex } = useLyrics();
 
-    const openLyricsModal = () => openModal(props => <LyricsModal rootProps={props} />);
+    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
     const makeClassName = (index: number): string => {
         if (currLrcIndex === null) return "";
@@ -43,7 +43,7 @@ function LyricsDisplay() {
     return (
         <div
             className="vc-spotify-lyrics"
-            onClick={openLyricsModal}
+            onClick={() => openModal(props => <LyricsModal rootProps={props} />)}
             onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
         >
             <div>

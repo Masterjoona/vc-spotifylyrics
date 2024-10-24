@@ -33,7 +33,9 @@ function ProviderMenuItem(toProvider: Provider, currentProvider?: Provider) {
 }
 
 export function LyricsContextMenu() {
-    const { lyricsInfo, currentLyrics, currLrcIndex } = useLyrics();
+    const { lyricsInfo, currLrcIndex } = useLyrics();
+
+    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
     const hasAShowingLyric = currLrcIndex !== null && currLrcIndex >= 0;
     const hasLyrics = !!(lyricsInfo?.lyricsVersions[Provider.Lrclib] || lyricsInfo?.lyricsVersions[Provider.Spotify]);
 

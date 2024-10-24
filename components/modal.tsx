@@ -44,7 +44,8 @@ function ModalHeaderContent({ track }: { track: Track; }) {
 }
 
 export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
-    const { track, currentLyrics, lyricRefs, currLrcIndex } = useLyrics();
+    const { track, lyricsInfo, lyricRefs, currLrcIndex } = useLyrics();
+    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
     return (
         <ModalRoot {...rootProps}>

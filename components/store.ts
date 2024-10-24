@@ -5,7 +5,6 @@
  */
 
 import { showNotification } from "@api/Notifications";
-import { PluginNative } from "@utils/types";
 import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
@@ -27,8 +26,6 @@ interface Device {
     id: string;
     is_active: boolean;
 }
-
-const Native = VencordNative.pluginHelpers.SpotifyLyrics as PluginNative<typeof import("../native")>;
 
 const lyricFetchers = {
     [Provider.Spotify]: (track: Track) => getLyricsSpotify(track.id),

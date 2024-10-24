@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { containsNonLatinChars } from "../../components/util";
 import settings from "../../settings";
 import { LyricsData, Provider, SyncedLyric } from "../types";
 
@@ -55,9 +54,6 @@ export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provi
     const translatedLyricsWithRomanized = await Promise.all(
         nonDuplicatedLyrics.map(async lyric => {
             if (!lyric.text) return [lyric.text, null, null];
-
-            if (!containsNonLatinChars(lyric.text))
-                return [lyric.text, lyric.text, lyric.text];
 
             const translation = await googleTranslate(lyric.text, language);
 
