@@ -8,7 +8,7 @@ import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 import { Button, showToast, Toasts } from "@webpack/common";
 
-import { clearLyricsCache } from "./api";
+import { clearLyricsCache, removeTranslations } from "./api";
 import languages from "./providers/translator/languages";
 import { Provider } from "./providers/types";
 
@@ -31,13 +31,18 @@ export default definePluginSettings({
         type: OptionType.SELECT,
         options: [
             { value: Provider.Spotify, label: "Spotify (Musixmatch)", default: true },
-            { value: Provider.Lrclib, label: "LRCLIB - opensource" },
+            { value: Provider.Lrclib, label: "LRCLIB" },
         ],
     },
     TranslateTo: {
-        description: "Translate lyrics to",
+        description: "Translate lyrics to - Changing this will clear existing translations",
         type: OptionType.SELECT,
-        options: languages
+        options: languages,
+        onChange: async () => {
+            await removeTranslations();
+            showToast("Translations cleared", Toasts.Type.SUCCESS);
+        }
+
     },
     PurgeLyricsCache: {
         description: "Purge the lyrics cache",

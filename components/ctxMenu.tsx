@@ -10,6 +10,9 @@ import { FluxDispatcher, Icons, Menu } from "@webpack/common";
 import { Provider } from "../providers/types";
 import { useLyrics } from "./util";
 
+const lyricsActualProviders = [Provider.Lrclib, Provider.Spotify];
+const lyricsAlternative = [Provider.Translated, Provider.Romanized];
+
 function ProviderMenuItem(toProvider: Provider, currentProvider?: Provider) {
     return (
         (!currentProvider || currentProvider !== toProvider) && (
@@ -32,6 +35,8 @@ function ProviderMenuItem(toProvider: Provider, currentProvider?: Provider) {
 export function LyricsContextMenu() {
     const { lyricsInfo, currentLyrics, currLrcIndex } = useLyrics();
     const hasAShowingLyric = currLrcIndex !== null && currLrcIndex >= 0;
+    const hasLyrics = !!(lyricsInfo?.lyricsVersions[Provider.Lrclib] || lyricsInfo?.lyricsVersions[Provider.Spotify]);
+
     return (
         <Menu.Menu
             navId="spotify-lyrics-menu"
@@ -54,10 +59,12 @@ export function LyricsContextMenu() {
                 id="spotify-lyrics-provider"
                 label="Lyrics Provider"
             >
-                {ProviderMenuItem(Provider.Spotify, lyricsInfo?.useLyric)}
-                {ProviderMenuItem(Provider.Lrclib, lyricsInfo?.useLyric)}
-                {ProviderMenuItem(Provider.Translated, lyricsInfo?.useLyric)}
-                {ProviderMenuItem(Provider.Romanized, lyricsInfo?.useLyric)}
+                {lyricsActualProviders.map(provider =>
+                    ProviderMenuItem(provider, lyricsInfo?.useLyric)
+                )}
+                {hasLyrics && lyricsAlternative.map(provider =>
+                    ProviderMenuItem(provider, lyricsInfo?.useLyric)
+                )}
             </Menu.MenuItem>
         </Menu.Menu>
     );

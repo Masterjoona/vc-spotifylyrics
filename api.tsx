@@ -82,24 +82,16 @@ export async function updateLyrics(trackId: string, newLyrics: SyncedLyric[], us
     );
 }
 
-/*
-export async function migrateOldLyrics() {
-    const oldLyrics = await DataStore.get(LyricsCacheKey) as Record<string, SyncedLyric[] | null>;
-    if (!oldLyrics) return;
-    // @ts-ignore
-    if (Object.entries(oldLyrics)[0][1].useLyric) {
-        return;
+export async function removeTranslations() {
+    const cache = await DataStore.get(LyricsCacheKey) as Record<string, LyricsData | null>;
+    const newCache = {} as Record<string, LyricsData | null>;
+
+    for (const [trackId, trackData] of Object.entries(cache)) {
+        const { Translated, ...lyricsVersions } = trackData?.lyricsVersions || {};
+        const newUseLyric = !!lyricsVersions[Provider.Spotify] ? Provider.Spotify : Provider.Lrclib;
+
+        newCache[trackId] = { lyricsVersions, useLyric: newUseLyric };
     }
 
-    const newLyrics = Object.entries(oldLyrics).reduce((acc, [id, lyrics]) => {
-        acc[id] = {
-            lrclibLyrics: lyrics,
-            useLyric: Provider.Lrclib,
-            englishTranslation: null,
-            musixmatchLyrics: null
-        };
-        return acc;
-    }, {} as Record<string, LyricsData>);
-    await DataStore.set(LyricsCacheKey, newLyrics);
+    await DataStore.set(LyricsCacheKey, newCache);
 }
-*/

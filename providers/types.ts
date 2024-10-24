@@ -5,7 +5,6 @@
  */
 
 export interface SyncedLyric {
-    lrcTime: string;
     time: number;
     text: string | null;
 }

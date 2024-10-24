@@ -11,6 +11,12 @@ import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { cl, NoteSvg, scrollClasses, useLyrics } from "./util";
 
+const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
 function ModalHeaderContent({ track }: { track: Track; }) {
     return (
         <ModalHeader>
@@ -55,7 +61,7 @@ export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
                                 ref={lyricRefs[i]}
                             >
                                 <span className={cl("modal-timestamp")} onClick={() => SpotifyStore.seek(line.time * 1000)}>
-                                    {line.lrcTime}
+                                    {formatTime(line.time)}
                                 </span>
                                 {line.text || NoteSvg(cl("modal-note"))}
                             </Text>

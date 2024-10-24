@@ -19,14 +19,6 @@ interface Line {
     endTimeMs: string;
 }
 
-const formatTimes = (ms: string) => {
-    const seconds = Number(ms) / 1000;
-    const minutes = Math.floor(seconds / 60);
-    const lrcTime = `${String(minutes).padStart(2, "0")}:${String(Math.floor(seconds % 60)).padStart(2, "0")}.${String(Math.floor((seconds % 1) * 100)).padStart(2, "0")}`;
-    return {
-        lrcTime, time: seconds
-    };
-};
 
 export async function getLyricsSpotify(trackId: string): Promise<LyricsData | null> {
     const resp = await fetch("https://spotify-lyrics-api-pi.vercel.app/?trackid=" + trackId);
@@ -42,7 +34,7 @@ export async function getLyricsSpotify(trackId: string): Promise<LyricsData | nu
             Spotify: lyrics.map(line => {
                 const trimmedText = line.words.trim();
                 return {
-                    ...formatTimes(line.startTimeMs),
+                    time: Number(line.startTimeMs) / 1000,
                     text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
                 };
             })
