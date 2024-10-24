@@ -36,7 +36,7 @@ function LyricsDisplay() {
                 <TooltipContainer text="No synced lyrics found">
                     {NoteSvg(cl("music-note"))}
                 </TooltipContainer>
-            </div >
+            </div>
         );
     }
 
