@@ -34,6 +34,11 @@ export default definePluginSettings({
             { value: Provider.Lrclib, label: "LRCLIB" },
         ],
     },
+    FallbackProvider: {
+        description: "When a lyrics provider fails, try other providers",
+        type: OptionType.BOOLEAN,
+        default: true,
+    },
     TranslateTo: {
         description: "Translate lyrics to - Changing this will clear existing translations",
         type: OptionType.SELECT,
@@ -59,4 +64,10 @@ export default definePluginSettings({
             </Button>
         ),
     },
+    TestingCache: {
+        description: "Save songs to a testing cache instead",
+        type: OptionType.BOOLEAN,
+        default: false,
+        hidden: true,
+    }
 });

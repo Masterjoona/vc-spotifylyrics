@@ -13,7 +13,7 @@ import { LyricsData, Provider, SyncedLyric } from "./providers/types";
 import settings from "./settings";
 
 
-const LyricsCacheKey = "SpotifyLyricsCacheNew";
+const LyricsCacheKey = true ? "SpotifyLyricsCacheTesting" : "SpotifyLyricsCacheNew";
 
 interface NullLyricCache {
     [key: string]: {
@@ -23,6 +23,13 @@ interface NullLyricCache {
 }
 
 let nullLyricCache = {} as NullLyricCache;
+
+export const lyricFetchers = {
+    [Provider.Spotify]: async (track: Track) => await getLyricsSpotify(track.id),
+    [Provider.Lrclib]: getLyricsLrclib,
+};
+
+export const providers = Object.keys(lyricFetchers) as Provider[];
 
 export async function getLyrics(track: Track | null): Promise<LyricsData | null> {
     if (!track) return null;
@@ -40,6 +47,7 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | null>
     }
 
     const provider = settings.store.LyricsProvider;
+    const providersToTry = [provider, ...providers.filter(p => p !== provider)];
 
     const getAndCacheLyrics = async (provider: Provider, fetchLyrics: () => Promise<LyricsData | null>): Promise<LyricsData | null> => {
         const lyricsInfo = await fetchLyrics();
@@ -52,11 +60,18 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | null>
         return lyricsInfo;
     };
 
-    if (provider === Provider.Spotify) {
-        return await getAndCacheLyrics(Provider.Spotify, () => getLyricsSpotify(track.id));
+    if (!settings.store.FallbackProvider) {
+        return await getAndCacheLyrics(provider, () => lyricFetchers[provider](track));
     }
 
-    return await getAndCacheLyrics(Provider.Lrclib, () => getLyricsLrclib(track));
+    for (const providerToTry of providersToTry) {
+        const lyricsInfo = await getAndCacheLyrics(providerToTry, () => lyricFetchers[providerToTry](track));
+        if (lyricsInfo) {
+            return lyricsInfo;
+        }
+    }
+
+    return null;
 }
 
 export async function clearLyricsCache() {
@@ -64,7 +79,7 @@ export async function clearLyricsCache() {
     await DataStore.set(LyricsCacheKey, {});
 }
 
-export async function updateLyrics(trackId: string, newLyrics: SyncedLyric[], useProvider: Provider, toProvider?: Provider) {
+export async function updateLyrics(trackId: string, newLyrics: SyncedLyric[], provider: Provider) {
     const cache = await DataStore.get(LyricsCacheKey) as Record<string, LyricsData | null>;
     const current = cache[trackId];
 
@@ -72,10 +87,10 @@ export async function updateLyrics(trackId: string, newLyrics: SyncedLyric[], us
         {
             ...cache, [trackId]: {
                 ...current,
-                useLyric: useProvider,
+                useLyric: provider,
                 lyricsVersions: {
                     ...current?.lyricsVersions,
-                    [toProvider || useProvider]: newLyrics
+                    [provider]: newLyrics
                 }
             }
         }
@@ -97,6 +112,7 @@ export async function removeTranslations() {
 }
 export async function migrateOldLyrics() {
     const oldCache = await DataStore.get("SpotifyLyricsCache");
+    await DataStore.set("SpotifyLyricsCacheTesting", {});
     if (!Object.entries(oldCache).length) return;
 
     const filteredCache = Object.entries(oldCache).filter(lrc => lrc[1]);
