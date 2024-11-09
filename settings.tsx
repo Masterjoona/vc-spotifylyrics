@@ -5,14 +5,40 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
+import { makeRange, SettingSliderComponent } from "@components/PluginSettings/components";
 import { OptionType } from "@utils/types";
-import { Button, showToast, Toasts } from "@webpack/common";
+import { Button, showToast, Text, Toasts, useEffect, useState } from "@webpack/common";
 
-import { clearLyricsCache, removeTranslations } from "./api";
+import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
+import { Lyrics } from "./components/lyrics";
+import { useLyrics } from "./components/util";
 import languages from "./providers/translator/languages";
 import { Provider } from "./providers/types";
 
-export default definePluginSettings({
+const sliderOptions = {
+    markers: makeRange(-2500, 2500, 250),
+    stickToMarkers: true,
+};
+
+function Details() {
+    const { lyricsInfo } = useLyrics();
+    const [lyricCount, setLyricCount] = useState<number | null>(null);
+
+    if (!lyricsInfo) return null;
+
+    useEffect(() => {
+        getLyricsCount().then(setLyricCount);
+    }, [lyricsInfo]);
+
+    return (
+        <>
+            <Text>Current lyrics provider: {lyricsInfo?.useLyric}</Text>
+            <Text>Storing {lyricCount} lyrics</Text>
+        </>
+    );
+}
+
+const settings = definePluginSettings({
     ShowMusicNoteOnNoLyrics: {
         description: "Show a music note icon when no lyrics are found",
         type: OptionType.BOOLEAN,
@@ -47,7 +73,50 @@ export default definePluginSettings({
             await removeTranslations();
             showToast("Translations cleared", Toasts.Type.SUCCESS);
         }
-
+    },
+    LyricsConversion: {
+        description: "Automatically translate or romanize lyrics",
+        type: OptionType.SELECT,
+        options: [
+            { value: Provider.None, label: "None", default: true },
+            { value: Provider.Translated, label: "Translate" },
+            { value: Provider.Romanized, label: "Romanize" },
+        ]
+    },
+    ShowFailedToasts: {
+        description: "Hide toasts when lyrics fail to fetch",
+        type: OptionType.BOOLEAN,
+        default: true,
+    },
+    LyricDelay: {
+        description: "",
+        type: OptionType.SLIDER,
+        default: 0,
+        hidden: true,
+        ...sliderOptions
+    },
+    Display: {
+        description: "",
+        type: OptionType.COMPONENT,
+        component: () => (
+            <>
+                <SettingSliderComponent
+                    option={{ ...sliderOptions } as any}
+                    onChange={v => {
+                        settings.store.LyricDelay = v;
+                    }}
+                    pluginSettings={Vencord.Settings.plugins.SpotifyLyrics}
+                    id={"LyricDelay"}
+                    onError={() => { }}
+                />
+                <Lyrics />
+            </>
+        )
+    },
+    Details: {
+        description: "",
+        type: OptionType.COMPONENT,
+        component: () => <Details />,
     },
     PurgeLyricsCache: {
         description: "Purge the lyrics cache",
@@ -71,3 +140,5 @@ export default definePluginSettings({
         hidden: true,
     }
 });
+
+export default settings;

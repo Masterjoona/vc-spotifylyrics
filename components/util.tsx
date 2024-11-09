@@ -10,6 +10,7 @@ import { React, useEffect, useState, useStateFromStores } from "@webpack/common"
 
 import { SpotifyLrcStore } from "../providers/store";
 import { SyncedLyric } from "../providers/types";
+import settings from "../settings";
 
 export const scrollClasses = findByPropsLazy("auto", "customTheme");
 
@@ -23,9 +24,9 @@ export function NoteSvg(className: string) {
     );
 }
 
-const calculateIndexes = (lyrics: SyncedLyric[], position: number) => {
+const calculateIndexes = (lyrics: SyncedLyric[], position: number, delay: number) => {
     const posInSec = position / 1000;
-    const currentIndex = lyrics.findIndex(l => l.time - 0.1 > posInSec && l.time < posInSec + 8) - 1;
+    const currentIndex = lyrics.findIndex(l => l.time - (delay / 1000) > posInSec && l.time < posInSec + 8) - 1;
     const nextLyric = lyrics.findIndex(l => l.time >= posInSec);
     return [currentIndex, nextLyric];
 };
@@ -40,6 +41,8 @@ export function useLyrics() {
             SpotifyLrcStore.lyricsInfo
         ]
     );
+
+    const { LyricDelay } = settings.use(["LyricDelay"]);
 
     const [currLrcIndex, setCurrLrcIndex] = useState<number | null>(null);
     const [nextLyric, setNextLyric] = useState<number | null>(null);
@@ -57,7 +60,7 @@ export function useLyrics() {
 
     useEffect(() => {
         if (currentLyrics && position) {
-            const [currentIndex, nextLyric] = calculateIndexes(currentLyrics, position);
+            const [currentIndex, nextLyric] = calculateIndexes(currentLyrics, position, LyricDelay);
             setCurrLrcIndex(currentIndex);
             setNextLyric(nextLyric);
         }

@@ -10,6 +10,7 @@ import { Flux, FluxDispatcher } from "@webpack/common";
 import { Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { getLyrics, lyricFetchers, updateLyrics } from "../api";
+import settings from "../settings";
 import { romanizeLyrics, translateLyrics } from "./translator";
 import { LyricsData, Provider } from "./types";
 
@@ -23,6 +24,17 @@ interface PlayerStateMin {
 interface Device {
     id: string;
     is_active: boolean;
+}
+
+function showNotif(title: string, body: string) {
+    if (settings.store.ShowFailedToasts) {
+        showNotification({
+            color: "#ee2902",
+            title,
+            body,
+            noPersist: true
+        });
+    }
 }
 
 // steal from spotifycontrols
@@ -57,6 +69,12 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
             store.position = e.position ?? 0;
             store.device = e.device ?? null;
             store.lyricsInfo = await getLyrics(e.track);
+            const { LyricsConversion } = settings.store;
+            if (LyricsConversion !== Provider.None) {
+                // @ts-ignore
+                FluxDispatcher.dispatch({ type: "SPOTIFY_LYRICS_PROVIDER_CHANGE", provider: LyricsConversion });
+            }
+            store.emitChange();
         },
 
         SPOTIFY_SET_DEVICES({ devices }: { devices: Device[]; }) {
@@ -80,26 +98,16 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
 
             if (provider === Provider.Translated || provider === Provider.Romanized) {
                 if (!currentInfo?.useLyric) {
-                    showNotification({
-                        color: "#ee2902",
-                        title: "No lyrics",
-                        body: `No lyrics to ${provider === Provider.Translated ? "translate" : "romanize"}`,
-                        noPersist: true
-                    });
+                    showNotif("No lyrics", `No lyrics to ${provider === Provider.Translated ? "translate" : "romanize"}`);
                     return;
                 }
 
                 const fetcher = provider === Provider.Translated ? translateLyrics : romanizeLyrics;
 
-                const fetchResult = await fetcher(currentInfo.lyricsVersions[currentInfo?.useLyric]);
+                const fetchResult = await fetcher(currentInfo.lyricsVersions[currentInfo.useLyric]);
 
                 if (!fetchResult) {
-                    showNotification({
-                        color: "#ee2902",
-                        title: "Lyrics fetch failed",
-                        body: `Failed to fetch ${provider === Provider.Translated ? "translation" : "romanization"}`,
-                        noPersist: true
-                    });
+                    showNotif("Lyrics fetch failed", `Failed to fetch ${provider === Provider.Translated ? "translation" : "romanization"}`);
                     return;
                 }
 
@@ -120,12 +128,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
 
             const newLyricsInfo = await lyricFetchers[e.provider](store.track!);
             if (!newLyricsInfo) {
-                showNotification({
-                    color: "#ee2902",
-                    title: "Lyrics fetch failed",
-                    body: "Failed to fetch lyrics with new provider",
-                    noPersist: true
-                });
+                showNotif("Lyrics fetch failed", `Failed to fetch ${e.provider} lyrics`);
                 return;
             }
 

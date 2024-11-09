@@ -13,7 +13,7 @@ import { LyricsData, Provider, SyncedLyric } from "./providers/types";
 import settings from "./settings";
 
 
-const LyricsCacheKey = true ? "SpotifyLyricsCacheTesting" : "SpotifyLyricsCacheNew";
+const LyricsCacheKey = "SpotifyLyricsCacheNew";
 
 interface NullLyricCache {
     [key: string]: {
@@ -77,6 +77,11 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | null>
 export async function clearLyricsCache() {
     nullLyricCache = {};
     await DataStore.set(LyricsCacheKey, {});
+}
+
+export async function getLyricsCount(): Promise<number> {
+    const cache = await DataStore.get(LyricsCacheKey) as Record<string, LyricsData | null>;
+    return Object.keys(cache).length;
 }
 
 export async function updateLyrics(trackId: string, newLyrics: SyncedLyric[], provider: Provider) {

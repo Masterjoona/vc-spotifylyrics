@@ -44,68 +44,47 @@ async function googleTranslate(text: string, targetLang: string, romanize: boole
     return await res.json();
 }
 
-const removeNewLine = (text: string) => text.replace("\n", "");
-
 async function processLyrics(
     lyrics: LyricsData["lyricsVersions"][Provider],
-    processFn: (texts: string[]) => Promise<Map<string, string | null>>
+    targetLang: string,
+    romanize: boolean
 ): Promise<SyncedLyric[] | null> {
-    const uniqueTexts = new Map<string, null>();
-    lyrics!.forEach(lyric => {
-        if (lyric.text && !uniqueTexts.has(lyric.text)) uniqueTexts.set(lyric.text, null);
-    });
-
-    const processedTexts = await processFn([...uniqueTexts.keys()]);
-
-    if (!processedTexts || ![...processedTexts.values()].some(text => text !== null)) return null;
-
-    return lyrics!.map(lyric => ({
-        ...lyric,
-        text: lyric.text === null ? null : processedTexts.get(lyric.text) ?? lyric.text
-    }));
-}
-
-export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
-    if (!lyrics) return null;
-    const language = settings.store.TranslateTo;
-
-    return processLyrics(lyrics, async texts => {
-        const joinedText = texts.join("\n");
-        const translation = await googleTranslate(joinedText, language, false);
-
-        const lyricTransMap = new Map<string, string | null>();
-        if (!translation || !translation.sentences) return texts.reduce((map, text) => map.set(text, null), lyricTransMap);
-
-        translation.sentences.forEach(sentence => {
-            lyricTransMap.set(removeNewLine(sentence.orig), removeNewLine(sentence.trans));
-        });
-        return lyricTransMap;
-    });
-}
-
-export async function romanizeLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
     if (!lyrics) return null;
 
     const nonDuplicatedLyrics = lyrics.filter((lyric, index, self) =>
         self.findIndex(l => l.text === lyric.text) === index
     );
 
-    const romanizedLyricsResp = await Promise.all(
+    const processedLyricsResp = await Promise.all(
         nonDuplicatedLyrics.map(async lyric => {
             if (!lyric.text) return [lyric.text, null];
 
-            const translation = await googleTranslate(lyric.text, "", true);
+            const translation = await googleTranslate(lyric.text, targetLang, romanize);
 
             if (!translation || !translation.sentences || translation.sentences.length === 0) return [lyric.text, null];
 
-            return [lyric.text, translation.sentences[0].src_translit];
+            return [lyric.text, romanize ? translation.sentences[0].src_translit : translation.sentences[0].trans];
         })
     );
 
-    if (romanizedLyricsResp[0][1] === null) return null;
+    if (processedLyricsResp[0][1] === null) return null;
 
     return lyrics.map(lyric => ({
         ...lyric,
-        text: romanizedLyricsResp.find(mapping => mapping[0] === lyric.text)?.[1] ?? lyric.text
+        text: processedLyricsResp.find(mapping => mapping[0] === lyric.text)?.[1] ?? lyric.text
     }));
+}
+
+export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
+    const language = settings.store.TranslateTo;
+    // Why not make only one request to translate?
+    // because occasionally it will add a new line
+    // and i dont have a good way to handle that
+    return processLyrics(lyrics, language, false);
+}
+
+export async function romanizeLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
+    // Why not make only one request to romanize?
+    // it will romanize it as one string, and how would i know where to split it?
+    return processLyrics(lyrics, "", true);
 }
