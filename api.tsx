@@ -117,8 +117,7 @@ export async function removeTranslations() {
 }
 export async function migrateOldLyrics() {
     const oldCache = await DataStore.get("SpotifyLyricsCache");
-    await DataStore.set("SpotifyLyricsCacheTesting", {});
-    if (!Object.entries(oldCache).length) return;
+    if (!oldCache || !Object.entries(oldCache).length) return;
 
     const filteredCache = Object.entries(oldCache).filter(lrc => lrc[1]);
     const result = {};
