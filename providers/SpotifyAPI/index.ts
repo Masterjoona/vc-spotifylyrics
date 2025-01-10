@@ -24,7 +24,13 @@ export async function getLyricsSpotify(trackId: string): Promise<LyricsData | nu
     const resp = await fetch("https://spotify-lyrics-api-pi.vercel.app/?trackid=" + trackId);
     if (!resp.ok) return null;
 
-    const data = await resp.json() as LyricsAPIResp;
+    let data: LyricsAPIResp;
+    try {
+        data = await resp.json() as LyricsAPIResp;
+    } catch (e) {
+        return null;
+    }
+
     const lyrics = data.lines;
     if (lyrics[0].startTimeMs === "0" && lyrics[lyrics.length - 1].startTimeMs === "0") return null;
 

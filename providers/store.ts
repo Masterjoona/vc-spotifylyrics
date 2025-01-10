@@ -47,6 +47,8 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
         public device: Device | null = null;
         public isPlaying = false;
         public lyricsInfo: LyricsData | null = null;
+        public fetchingsTracks: string[] = [];
+
 
         public get position(): number {
             let pos = this.mPosition;
@@ -64,6 +66,9 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
 
     const store = new SpotifyLrcStore(FluxDispatcher, {
         async SPOTIFY_PLAYER_STATE(e: PlayerStateMin) {
+            if (store.fetchingsTracks.includes(e.track?.id ?? "")) return;
+
+            store.fetchingsTracks.push(e.track?.id ?? "");
             store.track = e.track;
             store.isPlaying = e.isPlaying ?? false;
             store.position = e.position ?? 0;
@@ -74,6 +79,8 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                 // @ts-ignore
                 FluxDispatcher.dispatch({ type: "SPOTIFY_LYRICS_PROVIDER_CHANGE", provider: LyricsConversion });
             }
+
+            store.fetchingsTracks = store.fetchingsTracks.filter(id => id !== e.track?.id);
             store.emitChange();
         },
 
