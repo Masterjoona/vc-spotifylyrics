@@ -80,7 +80,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                 FluxDispatcher.dispatch({ type: "SPOTIFY_LYRICS_PROVIDER_CHANGE", provider: LyricsConversion });
             }
 
-            //store.fetchingsTracks = store.fetchingsTracks.filter(id => id !== e.track?.id);
+            store.fetchingsTracks = store.fetchingsTracks.filter(id => id !== e.track?.id);
             store.emitChange();
         },
 
