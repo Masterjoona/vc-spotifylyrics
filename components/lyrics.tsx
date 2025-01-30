@@ -19,6 +19,8 @@ function LyricsDisplay() {
 
     const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
+    const NoteElement = NoteSvg(cl("music-note"));
+
     const makeClassName = (index: number): string => {
         if (currLrcIndex === null) return "";
 
@@ -34,7 +36,7 @@ function LyricsDisplay() {
                 onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
             >
                 <TooltipContainer text="No synced lyrics found">
-                    {NoteSvg(cl("music-note"))}
+                    {NoteElement}
                 </TooltipContainer>
             </div>
         );
@@ -46,19 +48,16 @@ function LyricsDisplay() {
             onClick={() => openModal(props => <LyricsModal rootProps={props} />)}
             onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
         >
-            <div>
-                {currentLyrics?.map((line, i) => (
+            {currentLyrics?.map((line, i) => (
+                <div ref={lyricRefs[i]} key={i}>
                     <Text
-                        key={i}
                         variant={currLrcIndex === i ? "text-sm/normal" : "text-xs/normal"}
                         className={makeClassName(i)}
-                        // @ts-ignore
-                        ref={lyricRefs[i]}
                     >
-                        {line.text || NoteSvg(cl("music-note"))}
+                        {line.text || NoteElement}
                     </Text>
-                ))}
-            </div>
+                </div>
+            ))}
         </div>
     );
 }

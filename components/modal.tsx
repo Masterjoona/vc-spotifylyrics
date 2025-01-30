@@ -44,7 +44,7 @@ function ModalHeaderContent({ track }: { track: Track; }) {
 }
 
 export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
-    const { track, lyricsInfo, lyricRefs, currLrcIndex } = useLyrics();
+    const { track, lyricsInfo, currLrcIndex } = useLyrics();
     const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
     return (
@@ -55,11 +55,10 @@ export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
                     {currentLyrics ? (
                         currentLyrics.map((line, i) => (
                             <Text
+                                key={i}
                                 variant={currLrcIndex === i ? "text-md/semibold" : "text-sm/normal"}
                                 selectable
                                 className={currLrcIndex === i ? cl("modal-line-current") : cl("modal-line")}
-                                // @ts-ignore
-                                ref={lyricRefs[i]}
                             >
                                 <span className={cl("modal-timestamp")} onClick={() => SpotifyStore.seek(line.time * 1000)}>
                                     {formatTime(line.time)}

@@ -47,7 +47,7 @@ export function useLyrics() {
     const [currLrcIndex, setCurrLrcIndex] = useState<number | null>(null);
     const [nextLyric, setNextLyric] = useState<number | null>(null);
     const [position, setPosition] = useState(storePosition);
-    const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement>[]>([]);
+    const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement | null>[]>([]);
 
     const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 

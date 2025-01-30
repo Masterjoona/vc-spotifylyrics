@@ -5,11 +5,11 @@
  */
 
 import { copyWithToast } from "@utils/misc";
+import { findComponentByCodeLazy } from "@webpack";
 import { FluxDispatcher, Menu } from "@webpack/common";
 
 import { Provider } from "../providers/types";
 import { useLyrics } from "./util";
-import { findComponentByCodeLazy } from "@webpack";
 
 const CopyIcon = findComponentByCodeLazy(" 1-.5.5H10a6");
 
