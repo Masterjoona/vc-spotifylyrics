@@ -6,8 +6,9 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { makeRange, SettingSliderComponent } from "@components/PluginSettings/components";
+import { useAwaiter } from "@utils/react";
 import { OptionType } from "@utils/types";
-import { Button, showToast, Text, Toasts, useEffect, useState } from "@webpack/common";
+import { Button, showToast, Text, Toasts } from "@webpack/common";
 
 import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
 import { Lyrics } from "./components/lyrics";
@@ -22,18 +23,16 @@ const sliderOptions = {
 
 function Details() {
     const { lyricsInfo } = useLyrics();
-    const [lyricCount, setLyricCount] = useState<number | null>(null);
 
-    if (!lyricsInfo) return null;
-
-    useEffect(() => {
-        getLyricsCount().then(setLyricCount);
-    }, [lyricsInfo]);
+    const [count, error, loading] = useAwaiter(getLyricsCount, {
+        onError: () => console.error("Failed to get lyrics count"),
+        fallbackValue: null,
+    });
 
     return (
         <>
-            <Text>Current lyrics provider: {lyricsInfo?.useLyric}</Text>
-            <Text>Storing {lyricCount} lyrics</Text>
+            <Text>Current lyrics provider: {lyricsInfo?.useLyric || "None"}</Text>
+            {loading ? <Text>Loading lyrics count...</Text> : error ? <Text>Failed to get lyrics count</Text> : <Text>Lyrics count: {count}</Text>}
         </>
     );
 }

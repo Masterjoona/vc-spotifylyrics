@@ -15,14 +15,12 @@ import settings from "./settings";
 
 const LyricsCacheKey = "SpotifyLyricsCacheNew";
 
-interface NullLyricCache {
-    [key: string]: {
-        Lrclib?: boolean;
-        Spotify?: boolean;
-    };
+interface NullLyricCacheEntry {
+    [Provider.Lrclib]?: boolean;
+    [Provider.Spotify]?: boolean;
 }
 
-let nullLyricCache = {} as NullLyricCache;
+const nullLyricCache = new Map<string, NullLyricCacheEntry>();
 
 export const lyricFetchers = {
     [Provider.Spotify]: async (track: Track) => await getLyricsSpotify(track.id),
@@ -37,45 +35,41 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | null>
     const cacheKey = track.id;
     const cached = await DataStore.get(LyricsCacheKey) as Record<string, LyricsData | null>;
 
-    if (cached && cacheKey in cached) {
+    if (cached?.[cacheKey]) {
         return cached[cacheKey];
     }
 
-    const nullCacheEntry = nullLyricCache[cacheKey];
-    if (nullCacheEntry?.Lrclib && nullCacheEntry?.Spotify) {
-        return null;
-    }
+    const nullCacheEntry = nullLyricCache.get(cacheKey);
 
-    const provider = settings.store.LyricsProvider;
-    const providersToTry = [provider, ...providers.filter(p => p !== provider)];
-
-    const getAndCacheLyrics = async (provider: Provider, fetchLyrics: () => Promise<LyricsData | null>): Promise<LyricsData | null> => {
-        const lyricsInfo = await fetchLyrics();
-        if (!lyricsInfo) {
-            nullLyricCache[cacheKey] = { ...nullCacheEntry, [provider]: true };
+    if (nullCacheEntry) {
+        const provider = settings.store.LyricsProvider;
+        if (!settings.store.FallbackProvider && nullCacheEntry[provider]) {
             return null;
         }
-
-        await DataStore.set(LyricsCacheKey, { ...cached, [cacheKey]: lyricsInfo });
-        return lyricsInfo;
-    };
-
-    if (!settings.store.FallbackProvider) {
-        return await getAndCacheLyrics(provider, () => lyricFetchers[provider](track));
+        if (nullCacheEntry[Provider.Spotify] && nullCacheEntry[Provider.Lrclib]) {
+            return null;
+        }
     }
 
-    for (const providerToTry of providersToTry) {
-        const lyricsInfo = await getAndCacheLyrics(providerToTry, () => lyricFetchers[providerToTry](track));
+    const providersToTry = [settings.store.LyricsProvider, ...providers.filter(p => p !== settings.store.LyricsProvider)];
+
+    for (const provider of providersToTry) {
+        const lyricsInfo = await lyricFetchers[provider](track);
+
         if (lyricsInfo) {
+            await DataStore.set(LyricsCacheKey, { ...cached, [cacheKey]: lyricsInfo });
             return lyricsInfo;
         }
+
+        const updatedNullCacheEntry = nullLyricCache.get(cacheKey) || {};
+        nullLyricCache.set(cacheKey, { ...updatedNullCacheEntry, [provider]: true });
     }
 
     return null;
 }
 
 export async function clearLyricsCache() {
-    nullLyricCache = {};
+    nullLyricCache.clear();
     await DataStore.set(LyricsCacheKey, {});
 }
 
@@ -115,6 +109,7 @@ export async function removeTranslations() {
 
     await DataStore.set(LyricsCacheKey, newCache);
 }
+
 export async function migrateOldLyrics() {
     const oldCache = await DataStore.get("SpotifyLyricsCache");
     if (!oldCache || !Object.entries(oldCache).length) return;
