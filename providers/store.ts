@@ -104,7 +104,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
             }
 
             if (provider === Provider.Translated || provider === Provider.Romanized) {
-                if (!currentInfo?.useLyric) {
+                if (!currentInfo?.lyricsVersions[Provider.Spotify] && !currentInfo?.lyricsVersions[Provider.Lrclib]) {
                     showNotif("No lyrics", `No lyrics to ${provider === Provider.Translated ? "translate" : "romanize"}`);
                     return;
                 }
@@ -123,7 +123,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                     useLyric: provider,
                     lyricsVersions: {
                         ...currentInfo.lyricsVersions,
-                        [Provider.Translated]: fetchResult
+                        [provider]: fetchResult
                     }
                 };
 
