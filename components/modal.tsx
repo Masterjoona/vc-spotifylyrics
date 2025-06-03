@@ -49,7 +49,7 @@ export function LyricsModal({ rootProps }: { rootProps: ModalProps; }) {
 
     return (
         <ModalRoot {...rootProps}>
-            <ModalHeaderContent track={track} />
+            <ModalHeaderContent track={track!} />
             <ModalContent>
                 <div className={cl("lyrics-modal-container") + ` ${scrollClasses.auto}`}>
                     {currentLyrics ? (

@@ -6,6 +6,7 @@
 
 import { openModal } from "@utils/modal";
 import { ContextMenuApi, React, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
 import settings from "../settings";
@@ -63,21 +64,22 @@ function LyricsDisplay() {
 }
 
 export function Lyrics() {
+    SpotifyLrcStore.init();
     const track = useStateFromStores(
-        [SpotifyLrcStore],
-        () => SpotifyLrcStore.track,
+        [SpotifyStore],
+        () => SpotifyStore.track,
         null,
         (prev, next) => (prev?.id ? prev.id === next?.id : prev?.name === next?.name)
     );
 
     const device = useStateFromStores(
-        [SpotifyLrcStore],
-        () => SpotifyLrcStore.device,
+        [SpotifyStore],
+        () => SpotifyStore.device,
         null,
         (prev, next) => prev?.id === next?.id
     );
 
-    const isPlaying = useStateFromStores([SpotifyLrcStore], () => SpotifyLrcStore.isPlaying);
+    const isPlaying = useStateFromStores([SpotifyStore], () => SpotifyStore.isPlaying);
     const [shouldHide, setShouldHide] = useState(false);
 
     useEffect(() => {

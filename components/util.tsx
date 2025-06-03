@@ -7,6 +7,7 @@
 import { classNameFactory } from "@api/Styles";
 import { findByPropsLazy } from "@webpack";
 import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
 import { SyncedLyric } from "../providers/types";
@@ -33,14 +34,12 @@ const calculateIndexes = (lyrics: SyncedLyric[], position: number, delay: number
 
 export function useLyrics() {
     const [track, storePosition, isPlaying, lyricsInfo] = useStateFromStores(
-        [SpotifyLrcStore],
-        () => [
-            SpotifyLrcStore.track!,
-            SpotifyLrcStore.mPosition,
-            SpotifyLrcStore.isPlaying,
+        [SpotifyStore, SpotifyLrcStore], () => [
+            SpotifyStore.track,
+            SpotifyStore.mPosition,
+            SpotifyStore.isPlaying,
             SpotifyLrcStore.lyricsInfo
-        ]
-    );
+        ]);
 
     const { LyricDelay } = settings.use(["LyricDelay"]);
 
@@ -79,7 +78,7 @@ export function useLyrics() {
 
     useEffect(() => {
         if (isPlaying) {
-            setPosition(SpotifyLrcStore.position);
+            setPosition(SpotifyStore.position);
             const interval = setInterval(() => {
                 setPosition(p => p + 1000);
             }, 1000);

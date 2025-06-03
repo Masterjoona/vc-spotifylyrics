@@ -13,8 +13,9 @@ import("@main/csp").then(({ CspPolicies, ConnectSrc }) => {
     if (settings?.enabled) {
         CspPolicies["lrclib.net"] = ConnectSrc;
         CspPolicies["spotify-lyrics-api-pi.vercel.app"] = ConnectSrc;
+        CspPolicies["translate.googleapis.com"] = ConnectSrc;
     }
 }).catch(() => { });
 
 
-export function dummy(e: IpcMainInvokeEvent) { }
+export function dummy(_: IpcMainInvokeEvent) { }
