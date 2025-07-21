@@ -75,11 +75,16 @@ async function processLyrics(
     }));
 }
 
-export async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
+async function translateLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
     const language = settings.store.TranslateTo;
     return processLyrics(lyrics, language, false);
 }
 
-export async function romanizeLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
+async function romanizeLyrics(lyrics: LyricsData["lyricsVersions"][Provider]): Promise<SyncedLyric[] | null> {
     return processLyrics(lyrics, "", true);
 }
+
+export const lyricsAlternativeFetchers = {
+    [Provider.Translated]: translateLyrics,
+    [Provider.Romanized]: romanizeLyrics
+};

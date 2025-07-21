@@ -14,9 +14,9 @@ import { LyricsContextMenu } from "./ctxMenu";
 import { LyricsModal } from "./modal";
 import { cl, NoteSvg, useLyrics } from "./util";
 
-function LyricsDisplay() {
+function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
-    const { lyricsInfo, lyricRefs, currLrcIndex } = useLyrics();
+    const { lyricsInfo, lyricRefs, currLrcIndex } = useLyrics({ scroll });
 
     const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
 
@@ -32,7 +32,7 @@ function LyricsDisplay() {
     };
 
     if (!lyricsInfo) {
-        return ShowMusicNoteOnNoLyrics && (
+        return ShowMusicNoteOnNoLyrics ? (
             <div className="vc-spotify-lyrics"
                 onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
             >
@@ -40,7 +40,7 @@ function LyricsDisplay() {
                     {NoteElement}
                 </TooltipContainer>
             </div>
-        );
+        ) : null;
     }
 
     return (
@@ -63,7 +63,7 @@ function LyricsDisplay() {
     );
 }
 
-export function Lyrics() {
+export function Lyrics({ scroll = true }: { scroll?: boolean; } = {}) {
     SpotifyLrcStore.init();
     const track = useStateFromStores(
         [SpotifyStore],
@@ -92,5 +92,5 @@ export function Lyrics() {
 
     if (!track || !device?.is_active || shouldHide) return null;
 
-    return <LyricsDisplay />;
+    return <LyricsDisplay scroll={scroll} />;
 }

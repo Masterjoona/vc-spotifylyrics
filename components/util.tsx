@@ -32,14 +32,14 @@ const calculateIndexes = (lyrics: SyncedLyric[], position: number, delay: number
     return [currentIndex, nextLyric];
 };
 
-export function useLyrics() {
-    const [track, storePosition, isPlaying, lyricsInfo] = useStateFromStores(
-        [SpotifyStore, SpotifyLrcStore], () => [
+export function useLyrics({ scroll = true }: { scroll?: boolean; } = {}) {
+    const [track, storePosition, isPlaying] = useStateFromStores(
+        [SpotifyStore], () => [
             SpotifyStore.track,
             SpotifyStore.mPosition,
             SpotifyStore.isPlaying,
-            SpotifyLrcStore.lyricsInfo
         ]);
+    const lyricsInfo = useStateFromStores([SpotifyLrcStore], () => SpotifyLrcStore.lyricsInfo);
 
     const { LyricDelay } = settings.use(["LyricDelay"]);
 
@@ -66,7 +66,7 @@ export function useLyrics() {
     }, [currentLyrics, position]);
 
     useEffect(() => {
-        if (currLrcIndex !== null) {
+        if (scroll && currLrcIndex !== null) {
             if (currLrcIndex >= 0) {
                 lyricRefs[currLrcIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
             }
@@ -74,7 +74,7 @@ export function useLyrics() {
                 lyricRefs[nextLyric]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
             }
         }
-    }, [currLrcIndex, nextLyric]);
+    }, [currLrcIndex, nextLyric, scroll]);
 
     useEffect(() => {
         if (isPlaying) {

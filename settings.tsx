@@ -5,9 +5,9 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { makeRange, SettingSliderComponent } from "@components/PluginSettings/components";
+import { SliderSetting } from "@components/settings/tabs/plugins/components/SliderSetting";
 import { useAwaiter } from "@utils/react";
-import { OptionType } from "@utils/types";
+import { makeRange, OptionType } from "@utils/types";
 import { Button, showToast, Text, Toasts, useMemo } from "@webpack/common";
 
 import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
@@ -22,7 +22,7 @@ const sliderOptions = {
 };
 
 function Details() {
-    const { lyricsInfo } = useLyrics();
+    const { lyricsInfo } = useLyrics({ scroll: false });
 
     const [count, error, loading] = useAwaiter(
         useMemo(() => getLyricsCount, []),
@@ -58,8 +58,8 @@ const settings = definePluginSettings({
         description: "Where lyrics are fetched from",
         type: OptionType.SELECT,
         options: [
-            { value: Provider.Spotify, label: "Spotify (Musixmatch)", default: true },
-            { value: Provider.Lrclib, label: "LRCLIB" },
+            { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
+            { value: Provider.Lrclib, label: "LRCLIB", default: true },
         ],
     },
     FallbackProvider: {
@@ -86,7 +86,7 @@ const settings = definePluginSettings({
         ]
     },
     ShowFailedToasts: {
-        description: "Hide toasts when lyrics fail to fetch",
+        description: "Show toasts when lyrics fail to fetch",
         type: OptionType.BOOLEAN,
         default: true,
     },
@@ -102,16 +102,15 @@ const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => (
             <>
-                <SettingSliderComponent
+                <SliderSetting
                     option={{ ...sliderOptions } as any}
                     onChange={v => {
                         settings.store.LyricDelay = v;
                     }}
                     pluginSettings={Vencord.Settings.plugins.SpotifyLyrics}
                     id={"LyricDelay"}
-                    onError={() => { }}
                 />
-                <Lyrics />
+                <Lyrics scroll={false} />
             </>
         )
     },

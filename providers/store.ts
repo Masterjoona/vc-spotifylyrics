@@ -9,10 +9,12 @@ import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
 import { SpotifyStore, type Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { getLyrics, lyricFetchers, updateLyrics } from "../api";
+import { getLyrics, lyricFetchers, providers, updateLyrics } from "../api";
 import settings from "../settings";
-import { romanizeLyrics, translateLyrics } from "./translator";
+import { lyricsAlternativeFetchers } from "./translator";
 import { LyricsData, Provider } from "./types";
+
+export const lyricsAlternative = [Provider.Translated, Provider.Romanized];
 
 function showNotif(title: string, body: string) {
     if (settings.store.ShowFailedToasts) {
@@ -57,7 +59,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
 
         // @ts-ignore
         async SPOTIFY_LYRICS_PROVIDER_CHANGE(e: { provider: Provider; }) {
-            const track = SpotifyStore.track!;
+            const { track } = SpotifyStore;
             if (!track) return;
             const currentInfo = await getLyrics(track);
             const { provider } = e;
@@ -72,14 +74,16 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
             }
 
             if (provider === Provider.Translated || provider === Provider.Romanized) {
-                if (!currentInfo?.lyricsVersions[Provider.Spotify] && !currentInfo?.lyricsVersions[Provider.Lrclib]) {
+                const originalLyrics = currentInfo?.lyricsVersions[settings.store.LyricsProvider] || providers
+                    .map(p => currentInfo?.lyricsVersions[p])
+                    .find(Boolean);
+
+                if (!originalLyrics || !currentInfo) {
                     showNotif("No lyrics", `No lyrics to ${provider === Provider.Translated ? "translate" : "romanize"}`);
                     return;
                 }
 
-                const fetcher = provider === Provider.Translated ? translateLyrics : romanizeLyrics;
-
-                const fetchResult = await fetcher(currentInfo.lyricsVersions[currentInfo.useLyric]);
+                const fetchResult = await lyricsAlternativeFetchers[provider](originalLyrics);
 
                 if (!fetchResult) {
                     showNotif("Lyrics fetch failed", `Failed to fetch ${provider === Provider.Translated ? "translation" : "romanization"}`);
