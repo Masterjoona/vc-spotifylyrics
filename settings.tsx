@@ -6,7 +6,7 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { SliderSetting } from "@components/settings/tabs/plugins/components/SliderSetting";
-import { useAwaiter } from "@utils/react";
+import { useAwaiter, useIntersection } from "@utils/react";
 import { makeRange, OptionType } from "@utils/types";
 import { Button, showToast, Text, Toasts, useMemo } from "@webpack/common";
 
@@ -27,7 +27,7 @@ function Details() {
     const [count, error, loading] = useAwaiter(
         useMemo(() => getLyricsCount, []),
         {
-            onError: () => console.error("Failed to get lyrics count"),
+            onError: e => console.error("Failed to get lyrics count", e),
             fallbackValue: null,
         }
     );
@@ -100,19 +100,22 @@ const settings = definePluginSettings({
     Display: {
         description: "",
         type: OptionType.COMPONENT,
-        component: () => (
-            <>
-                <SliderSetting
-                    option={{ ...sliderOptions } as any}
-                    onChange={v => {
-                        settings.store.LyricDelay = v;
-                    }}
-                    pluginSettings={Vencord.Settings.plugins.SpotifyLyrics}
-                    id={"LyricDelay"}
-                />
-                <Lyrics scroll={false} />
-            </>
-        )
+        component: () => {
+            const [rootRef, isIntersecting] = useIntersection();
+            return (
+                <div ref={rootRef}>
+                    <SliderSetting
+                        option={{ ...sliderOptions } as any}
+                        onChange={v => {
+                            settings.store.LyricDelay = v;
+                        }}
+                        pluginSettings={Vencord.Settings.plugins.SpotifyLyrics}
+                        id={"LyricDelay"}
+                    />
+                    <Lyrics scroll={isIntersecting} />
+                </div>
+            );
+        }
     },
     Details: {
         description: "",
