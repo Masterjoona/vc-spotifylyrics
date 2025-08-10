@@ -6,13 +6,17 @@
 
 import settings from "../../settings";
 import { Provider, SyncedLyric } from "../types";
+import { PluginNative } from "@utils/types";
 
 // stolen from src\plugins\translate\utils.ts
+
+const Native = VencordNative.pluginHelpers.vcSpotifylyricsMain as PluginNative<
+    typeof import("../../native")
+>;
 
 interface GoogleData {
     src: string;
     sentences: {
-        // 🏳️‍⚧️
         trans: string;
         orig: string;
         src_translit?: string;
@@ -20,28 +24,7 @@ interface GoogleData {
 }
 
 async function googleTranslate(text: string, targetLang: string, romanize: boolean): Promise<GoogleData | null> {
-    const url = "https://translate.googleapis.com/translate_a/single?" + new URLSearchParams({
-        // see https://stackoverflow.com/a/29537590 for more params
-        // holy shidd nvidia
-        client: "gtx",
-        // source language
-        sl: "auto",
-        // target language
-        tl: targetLang,
-        // what to return, t = translation probably
-        dt: romanize ? "rm" : "t",
-        // Send json object response instead of weird array
-        dj: "1",
-        source: "input",
-        // query, duh
-        q: text
-    });
-
-    const res = await fetch(url);
-    if (!res.ok)
-        return null;
-
-    return await res.json();
+    return Native.googleTranslateNative(text, targetLang, romanize);
 }
 
 async function processLyrics(
@@ -57,30 +40,34 @@ async function processLyrics(
 
     const processedLyricsResp = await Promise.all(
         nonDuplicatedLyrics.map(async lyric => {
-            if (!lyric.text) return [lyric.text, null];
+            if (!lyric.text) return [lyric.text, null] as const;
 
             const translation = await googleTranslate(lyric.text, targetLang, romanize);
+            if (!translation || !translation.sentences || translation.sentences.length === 0)
+                return [lyric.text, null] as const;
 
-            if (!translation || !translation.sentences || translation.sentences.length === 0) return [lyric.text, null];
+            const out = romanize
+                ? translation.sentences[0].src_translit
+                : translation.sentences[0].trans;
 
-            return [lyric.text, romanize ? translation.sentences[0].src_translit : translation.sentences[0].trans];
+            return [lyric.text, out ?? null] as const;
         })
     );
 
-    if (processedLyricsResp.every(mapping => mapping[1] === null)) return null;
+    if (processedLyricsResp.every(([, mapped]) => mapped === null)) return null;
 
-    return lyrics.map(lyric => ({
-        ...lyric,
-        text: processedLyricsResp.find(mapping => mapping[0] === lyric.text)?.[1] ?? lyric.text
-    }));
+    return lyrics.map(lyric => {
+        const mapped = processedLyricsResp.find(([orig]) => orig === lyric.text)?.[1] ?? lyric.text;
+        return { ...lyric, text: mapped };
+    });
 }
 
 async function translateLyrics(lyrics: SyncedLyric[]) {
-    return await processLyrics(lyrics, settings.store.TranslateTo, false);
+    return processLyrics(lyrics, settings.store.TranslateTo, false);
 }
 
 async function romanizeLyrics(lyrics: SyncedLyric[]) {
-    return await processLyrics(lyrics, "", true);
+    return processLyrics(lyrics, "", true);
 }
 
 export const lyricsAlternativeFetchers = {
