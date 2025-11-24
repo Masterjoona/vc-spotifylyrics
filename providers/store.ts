@@ -9,7 +9,7 @@ import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
 import { SpotifyStore, type Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { getLyrics, lyricFetchers, providers, updateLyrics } from "../api";
+import { getLyrics, identifyTrack, lyricFetchers, providers, updateLyrics } from "../api";
 import settings from "../settings";
 import { lyricsAlternativeFetchers } from "./translator";
 import { LyricsData, Provider } from "./types";
@@ -28,8 +28,8 @@ function showNotif(title: string, body: string) {
 }
 
 export const SpotifyLrcStore = proxyLazyWebpack(() => {
-    let lyricsInfo: LyricsData | null = null;
-    let fetchingsTracks: string[] = [];
+    let lyricsInfo: LyricsData | undefined = void 0;
+    const fetchingsTracks = new Set<string>();
 
     class SpotifyLrcStore extends Flux.Store {
         init() { }
@@ -40,10 +40,14 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
 
     const store = new SpotifyLrcStore(FluxDispatcher, {
         async SPOTIFY_PLAYER_STATE(e: { track: Track | null; }) {
-            if (fetchingsTracks.includes(e.track?.id ?? "")) return;
+            if (!e.track) return;
 
-            fetchingsTracks.push(e.track?.id ?? "");
+            const identifiedTrack = identifyTrack(e.track);
+            if (fetchingsTracks.has(identifiedTrack)) return;
+
+            fetchingsTracks.add(identifiedTrack);
             lyricsInfo = await getLyrics(e.track);
+
             const { LyricsConversion } = settings.store;
             if (LyricsConversion !== Provider.None) {
                 FluxDispatcher.dispatch({
@@ -53,8 +57,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                 });
             }
 
-            fetchingsTracks = fetchingsTracks.filter(id => id !== e.track?.id);
-            store.emitChange();
+            fetchingsTracks.delete(identifiedTrack);
         },
 
         // @ts-ignore
@@ -65,15 +68,17 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
             const { provider } = e;
             if (currentInfo?.useLyric === provider) return;
 
+            const identifiedTrack = identifyTrack(track);
+
             if (currentInfo?.lyricsVersions[provider]) {
                 lyricsInfo = { ...currentInfo, useLyric: provider };
 
-                await updateLyrics(track.id, currentInfo.lyricsVersions[provider]!, provider);
+                await updateLyrics(identifiedTrack, currentInfo.lyricsVersions[provider]!, provider);
                 store.emitChange();
                 return;
             }
 
-            if (provider === Provider.Translated || provider === Provider.Romanized) {
+            if (lyricsAlternative.includes(provider)) {
                 const originalLyrics = currentInfo?.lyricsVersions[settings.store.LyricsProvider] || providers
                     .map(p => currentInfo?.lyricsVersions[p])
                     .find(Boolean);
@@ -99,7 +104,7 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                     }
                 };
 
-                await updateLyrics(track.id, fetchResult, provider);
+                await updateLyrics(identifiedTrack, fetchResult, provider);
 
                 store.emitChange();
                 return;
@@ -113,8 +118,34 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
 
             lyricsInfo = newLyricsInfo;
 
-            updateLyrics(track.id, newLyricsInfo.lyricsVersions[e.provider], e.provider);
+            await updateLyrics(identifiedTrack, newLyricsInfo.lyricsVersions[e.provider], e.provider);
 
+            store.emitChange();
+        },
+
+        // @ts-ignore
+        async SPOTIFY_LYRICS_UPDATE(e: { newLyrics: SyncedLyric[]; provider: Provider; }) {
+            const { newLyrics, provider } = e;
+            const { track } = SpotifyStore;
+            if (!track) return;
+            if (!lyricsInfo) {
+                lyricsInfo = {
+                    useLyric: provider,
+                    lyricsVersions: {
+                        [provider]: newLyrics
+                    }
+                };
+            } else {
+                lyricsInfo = {
+                    ...lyricsInfo,
+                    useLyric: provider,
+                    lyricsVersions: {
+                        ...lyricsInfo.lyricsVersions,
+                        [provider]: newLyrics
+                    }
+                };
+            }
+            await updateLyrics(identifyTrack(track), newLyrics, provider);
             store.emitChange();
         }
     });

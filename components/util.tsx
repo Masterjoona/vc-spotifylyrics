@@ -5,8 +5,9 @@
  */
 
 import { classNameFactory } from "@api/Styles";
+import { isNonNullish } from "@utils/guards";
 import { findByPropsLazy } from "@webpack";
-import { React, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { React, useEffect, useMemo, useState, useStateFromStores } from "@webpack/common";
 import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
@@ -26,11 +27,18 @@ export function NoteSvg() {
 }
 
 
+export const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+
 const getIndexes = (lyrics: SyncedLyric[], position: number, delay: number) => {
-    const posInSec = (position + delay) / 1000;
+    const posInSec = (position + delay - 300) / 1000;
 
     let left = 0, right = lyrics.length - 1;
-    let currentIndex: number | null = null;
+    let currentIndex: number | undefined = void 0;
 
     while (left <= right) {
         const mid = Math.floor((left + right) / 2);
@@ -49,71 +57,73 @@ const getIndexes = (lyrics: SyncedLyric[], position: number, delay: number) => {
         }
     }
 
-    const nextIdx = currentIndex !== null ? currentIndex + 1 : left;
-    const nextLyricIdx = nextIdx < lyrics.length ? nextIdx : null;
+    const currIdxNonull = isNonNullish(currentIndex);
 
-    if (currentIndex !== null && posInSec - lyrics[currentIndex].time > 8) {
-        return [null, nextLyricIdx];
+    const nextIdx = currIdxNonull ? currentIndex! + 1 : left;
+    const nextLyricIdx = nextIdx < lyrics.length ? nextIdx : undefined;
+
+    if (currIdxNonull && posInSec - lyrics[currentIndex!].time > 8) {
+        return [undefined, nextLyricIdx];
     }
 
     return [currentIndex, nextLyricIdx];
 };
 
-export function useLyrics({ scroll = true }: { scroll?: boolean; } = {}) {
+export function useLyrics({ scroll = true, previewLyrics = void 0 }: { scroll?: boolean, previewLyrics?: SyncedLyric[]; } = {}) {
     const [track, storePosition, isPlaying] = useStateFromStores(
         [SpotifyStore], () => [
             SpotifyStore.track,
             SpotifyStore.mPosition,
             SpotifyStore.isPlaying,
-        ]);
+        ], []);
+
     const lyricsInfo = useStateFromStores([SpotifyLrcStore], () => SpotifyLrcStore.lyricsInfo);
 
     const { LyricDelay } = settings.use(["LyricDelay"]);
 
-    const [currLrcIndex, setCurrLrcIndex] = useState<number | null>(null);
-    const [nextLyric, setNextLyric] = useState<number | null>(null);
+    const [currLrcIndex, setCurrLrcIndex] = useState<number | undefined>(void 0);
     const [position, setPosition] = useState(storePosition);
-    const [lyricRefs, setLyricRefs] = useState<React.RefObject<HTMLDivElement | null>[]>([]);
 
-    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
+    const currentLyrics = useMemo(() => {
+        if (previewLyrics) return previewLyrics;
+        return lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
+    }, [lyricsInfo, previewLyrics]);
 
-    useEffect(() => {
-        if (currentLyrics) {
-            setLyricRefs(currentLyrics.map(() => React.createRef()));
-        }
-    }, [currentLyrics]);
-
+    const lyricRefs = useMemo(() => currentLyrics?.map(() => React.createRef<HTMLDivElement>()), [currentLyrics]);
 
     useEffect(() => {
-        if (currentLyrics && position != null) {
-            const [currentIndex, nextLyricIndex] = getIndexes(currentLyrics, position, LyricDelay);
-            setCurrLrcIndex(currentIndex);
-            setNextLyric(nextLyricIndex);
-        } else {
-            setCurrLrcIndex(null);
-            setNextLyric(null);
+        if (currentLyrics && isNonNullish(position)) {
+            const [currentIndex] = getIndexes(currentLyrics, position, LyricDelay);
+            setCurrLrcIndex(prev => prev !== currentIndex ? currentIndex : prev);
+            return;
         }
+
+        isNonNullish(currLrcIndex) && setCurrLrcIndex(void 0);
     }, [currentLyrics, position, LyricDelay]);
 
-    useEffect(() => {
-        if (scroll && currLrcIndex !== null) {
-            if (currLrcIndex >= 0) {
-                lyricRefs[currLrcIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
-            if (currLrcIndex < 0 && nextLyric !== null) {
-                lyricRefs[nextLyric]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
-        }
-    }, [currLrcIndex, nextLyric, scroll, lyricRefs]);
 
     useEffect(() => {
+        if (!scroll || !isNonNullish(currLrcIndex) || !lyricRefs || currLrcIndex < 0) return;
+
+        lyricRefs[currLrcIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, [currLrcIndex, scroll, lyricRefs]);
+
+    useEffect(() => {
+        if (!currentLyrics || !lyricRefs) return;
+
+        const [, nextLyricIndex] = getIndexes(currentLyrics, storePosition, LyricDelay);
+
+        isNonNullish(nextLyricIndex) && !isNonNullish(currLrcIndex) && lyricRefs[nextLyricIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, [storePosition, lyricRefs, currentLyrics, LyricDelay]);
+
+    useEffect(() => {
+        setPosition(SpotifyStore.position);
         if (!isPlaying) return;
 
-        setPosition(SpotifyStore.position);
         const interval = setInterval(() => setPosition(p => p + 1000), 1000);
 
         return () => clearInterval(interval);
     }, [storePosition, isPlaying]);
 
-    return { track, lyricsInfo, lyricRefs, currLrcIndex, nextLyric };
+    return { track, currentLyrics, lyricRefs, lyricsInfo, currLrcIndex };
 }

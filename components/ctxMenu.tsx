@@ -4,20 +4,23 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { copyWithToast } from "@utils/misc";
+import { copyWithToast } from "@utils/discord";
+import { openModal } from "@utils/modal";
 import { findComponentByCodeLazy } from "@webpack";
 import { FluxDispatcher, Menu } from "@webpack/common";
 
 import { providers } from "../api";
 import { lyricsAlternative } from "../providers/store";
+import { SearchModal } from "./search";
 import { useLyrics } from "./util";
 
 const CopyIcon = findComponentByCodeLazy(" 1-.5.5H10a6");
+const SearchIcon = findComponentByCodeLazy("1.42l-4.67-4.68ZM17", "children:(");
 
 export function LyricsContextMenu() {
-    const { lyricsInfo, currLrcIndex } = useLyrics({ scroll: false });
+    const { track, lyricsInfo, currentLyrics, currLrcIndex } = useLyrics({ scroll: false });
 
-    const currLyric = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric]?.[currLrcIndex ?? NaN];
+    const currLyric = currentLyrics?.[currLrcIndex ?? NaN];
     const hasLyrics = providers.some(provider => lyricsInfo?.lyricsVersions[provider]?.length);
 
     return (
@@ -35,6 +38,16 @@ export function LyricsContextMenu() {
                 action={() => copyWithToast(currLyric!.text!, "Lyric copied!")}
                 icon={CopyIcon}
             />
+
+            {!hasLyrics && (
+                <Menu.MenuItem
+                    key="search-lyrics"
+                    id="search-lyrics"
+                    label="Search for lyrics"
+                    action={() => openModal(props => <SearchModal props={props} searchFor={track?.name} />)}
+                    icon={SearchIcon}
+                />
+            )}
 
             <Menu.MenuItem
                 navId="spotify-lyrics-provider"

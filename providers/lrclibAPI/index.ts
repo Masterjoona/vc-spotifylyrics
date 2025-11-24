@@ -4,13 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Track } from "plugins/spotifyControls/SpotifyStore";
-
-import { LyricsData, Provider } from "../types";
+import type { Track } from "plugins/spotifyControls/SpotifyStore";
+import type { SyncedLyric } from "../types";
 
 const baseUrlLrclib = "https://lrclib.net/api/get";
 
-interface LrcLibResponse {
+export interface LRCLIBTrack {
     id: number;
     name: string;
     trackName: string;
@@ -27,7 +26,19 @@ function lyricTimeToSeconds(time: string) {
     return minutes * 60 + seconds;
 }
 
-export async function getLyricsLrclib(track: Track): Promise<LyricsData | null> {
+export function lrcFormatToSyncedLyrics(syncedLyrics: string): SyncedLyric[] {
+    const lines = syncedLyrics.split("\n").filter(line => line.trim() !== "");
+    return lines.map(line => {
+        const [lrcTime, text] = line.split("]");
+        const trimmedText = text.trim();
+        return {
+            time: lyricTimeToSeconds(lrcTime),
+            text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
+        };
+    });
+}
+
+export async function getLyricsLrclib(track: Track) {
     const info = {
         track_name: track.name,
         artist_name: track.artists[0].name,
@@ -37,31 +48,26 @@ export async function getLyricsLrclib(track: Track): Promise<LyricsData | null> 
 
     const params = new URLSearchParams(info);
     const url = `${baseUrlLrclib}?${params.toString()}`;
-    const response = await fetch(url, {
-        headers: {
-            "User-Agent": "SpotifyLyrics for Vencord (https://github.com/Masterjoona/vc-spotifylyrics)"
-        }
-    });
+    let data: LRCLIBTrack;
 
-    if (!response.ok) return null;
+    try {
+        const response = await fetch(url, {
+            headers: {
+                "User-Agent": "SpotifyLyrics for Vencord (https://github.com/Masterjoona/vc-spotifylyrics)"
+            }
+        });
 
-    const data = await response.json() as LrcLibResponse;
+        if (!response.ok) return null;
+
+        data = await response.json() as LRCLIBTrack;
+    } catch {
+        return null;
+    }
+
     if (!data.syncedLyrics) return null;
 
-    const lyrics = data.syncedLyrics;
-    const lines = lyrics.split("\n").filter(line => line.trim() !== "");
 
-    return {
-        useLyric: Provider.Lrclib,
-        lyricsVersions: {
-            LRCLIB: lines.map(line => {
-                const [lrcTime, text] = line.split("]");
-                const trimmedText = text.trim();
-                return {
-                    time: lyricTimeToSeconds(lrcTime),
-                    text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
-                };
-            })
-        }
-    };
+    const lyrics = lrcFormatToSyncedLyrics(data.syncedLyrics);
+    if (lyrics.length === 0) return null;
+    return lyrics;
 }

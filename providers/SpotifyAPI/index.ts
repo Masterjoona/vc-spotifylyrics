@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { LyricsData, Provider } from "../types";
+import type { SyncedLyric } from "../types";
 
 interface LyricsAPIResp {
     error: boolean;
@@ -20,7 +20,7 @@ interface Line {
 }
 
 
-export async function getLyricsSpotify(trackId: string): Promise<LyricsData | null> {
+export async function getLyricsSpotify(trackId: string): Promise<SyncedLyric[] | null> {
     const resp = await fetch("https://spotify-lyrics-api-pi.vercel.app/?trackid=" + trackId);
     if (!resp.ok) return null;
 
@@ -34,16 +34,11 @@ export async function getLyricsSpotify(trackId: string): Promise<LyricsData | nu
     const lyrics = data.lines;
     if (lyrics[0].startTimeMs === "0" && lyrics[lyrics.length - 1].startTimeMs === "0") return null;
 
-    return {
-        useLyric: Provider.Spotify,
-        lyricsVersions: {
-            Spotify: lyrics.map(line => {
-                const trimmedText = line.words.trim();
-                return {
-                    time: Number(line.startTimeMs) / 1000,
-                    text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
-                };
-            })
-        }
-    };
+    return lyrics.map(line => {
+        const trimmedText = line.words.trim();
+        return {
+            time: Number(line.startTimeMs) / 1000,
+            text: (trimmedText === "" || trimmedText === "♪") ? null : trimmedText
+        };
+    });
 }

@@ -5,21 +5,18 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { SliderSetting } from "@components/settings/tabs/plugins/components/SliderSetting";
+import { openModal } from "@utils/modal";
 import { useAwaiter, useIntersection } from "@utils/react";
-import { makeRange, OptionType } from "@utils/types";
-import { Button, showToast, Text, Toasts, useMemo } from "@webpack/common";
+import { OptionType } from "@utils/types";
+import { showToast, Toasts, useMemo } from "@webpack/common";
 
 import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
 import { Lyrics } from "./components/lyrics";
+import { SearchModal } from "./components/search";
 import { useLyrics } from "./components/util";
 import languages from "./providers/translator/languages";
 import { Provider } from "./providers/types";
-
-const sliderOptions = {
-    markers: makeRange(-2500, 2500, 250),
-    stickToMarkers: true,
-};
+import { Button, Paragraph } from "@components/index";
 
 function Details() {
     const { lyricsInfo } = useLyrics({ scroll: false });
@@ -34,8 +31,8 @@ function Details() {
 
     return (
         <>
-            <Text>Current lyrics provider: {lyricsInfo?.useLyric || "None"}</Text>
-            {loading ? <Text>Loading lyrics count...</Text> : error ? <Text>Failed to get lyrics count</Text> : <Text>Lyrics count: {count}</Text>}
+            <Paragraph>Current lyrics provider: {lyricsInfo?.useLyric || "None"}</Paragraph>
+            {loading ? <Paragraph>Loading lyrics count...</Paragraph> : error ? <Paragraph>Failed to get lyrics count</Paragraph> : <Paragraph>Lyrics count: {count}</Paragraph>}
         </>
     );
 }
@@ -59,7 +56,7 @@ const settings = definePluginSettings({
         type: OptionType.SELECT,
         options: [
             { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
-            { value: Provider.Lrclib, label: "LRCLIB", default: true },
+            { value: Provider.LRCLIB, label: "LRCLIB", default: true },
         ],
     },
     FallbackProvider: {
@@ -92,10 +89,8 @@ const settings = definePluginSettings({
     },
     LyricDelay: {
         description: "",
-        type: OptionType.SLIDER,
+        type: OptionType.NUMBER,
         default: 0,
-        hidden: true,
-        ...sliderOptions
     },
     Display: {
         description: "",
@@ -104,14 +99,6 @@ const settings = definePluginSettings({
             const [rootRef, isIntersecting] = useIntersection();
             return (
                 <div ref={rootRef}>
-                    <SliderSetting
-                        option={{ ...sliderOptions } as any}
-                        onChange={v => {
-                            settings.store.LyricDelay = v;
-                        }}
-                        pluginSettings={Vencord.Settings.plugins.SpotifyLyrics}
-                        id={"LyricDelay"}
-                    />
                     <Lyrics scroll={isIntersecting} />
                 </div>
             );
@@ -122,12 +109,23 @@ const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => <Details />,
     },
+    SearchLyrics: {
+        description: "",
+        type: OptionType.COMPONENT,
+        component: () => {
+            return (
+                <Button onClick={() => openModal(props => <SearchModal props={props} />)}>
+                    Search from lrclib
+                </Button>
+            );
+        }
+    },
     PurgeLyricsCache: {
         description: "Purge the lyrics cache",
         type: OptionType.COMPONENT,
         component: () => (
             <Button
-                color={Button.Colors.RED}
+                variant="dangerPrimary"
                 onClick={() => {
                     clearLyricsCache();
                     showToast("Lyrics cache purged", Toasts.Type.SUCCESS);

@@ -5,8 +5,9 @@
  */
 
 import { openModal } from "@utils/modal";
-import { ContextMenuApi, React, Text, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, React, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
 import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
+import { Paragraph } from "@components/Paragraph";
 
 import { SpotifyLrcStore } from "../providers/store";
 import settings from "../settings";
@@ -20,9 +21,7 @@ const currentCl = cl("current");
 
 function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
-    const { lyricsInfo, lyricRefs, currLrcIndex } = useLyrics({ scroll });
-
-    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric] || null;
+    const { lyricRefs, currLrcIndex, currentLyrics } = useLyrics({ scroll });
 
     const makeClassName = (index: number): string => {
         if (currLrcIndex == null) return prevCl;
@@ -39,14 +38,14 @@ function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
             onClick={() => openModal(props => <LyricsModal props={props} />)}
             onContextMenu={e => ContextMenuApi.openContextMenu(e, () => <LyricsContextMenu />)}
         >
-            {currentLyrics ? currentLyrics.map((line, i) => (
-                <div ref={lyricRefs[i]} key={i}>
-                    <Text
-                        variant={currLrcIndex === i ? "text-sm/normal" : "text-xs/normal"}
+            {currentLyrics && lyricRefs ? currentLyrics.map((line, i) => (
+                <div ref={lyricRefs[i]} key={i} className="vc-spotify-lyrics-line">
+                    <Paragraph
+                        size={currLrcIndex === i ? "sm" : "xs"}
                         className={makeClassName(i)}
                     >
                         {line.text || NoteSvg()}
-                    </Text>
+                    </Paragraph>
                 </div>
             )) : ShowMusicNoteOnNoLyrics ? (
                 <TooltipContainer text="No synced lyrics found">
@@ -59,6 +58,7 @@ function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
 
 export function Lyrics({ scroll = true }: { scroll?: boolean; } = {}) {
     SpotifyLrcStore.init();
+
     const track = useStateFromStores(
         [SpotifyStore],
         () => SpotifyStore.track,

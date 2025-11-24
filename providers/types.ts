@@ -10,7 +10,7 @@ export interface SyncedLyric {
 }
 
 export enum Provider {
-    Lrclib = "LRCLIB",
+    LRCLIB = "LRCLIB",
     Spotify = "Spotify",
     Translated = "Translated",
     Romanized = "Romanized",
@@ -18,6 +18,6 @@ export enum Provider {
 }
 
 export interface LyricsData {
-    lyricsVersions: Partial<Record<Provider, SyncedLyric[] | null>>;
+    lyricsVersions: Partial<Record<Provider, SyncedLyric[] | undefined>>;
     useLyric: Provider;
 }

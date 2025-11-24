@@ -67,7 +67,7 @@ async function processLyrics(
         })
     );
 
-    if (processedLyricsResp.every(mapping => mapping[1] === null)) return null;
+    if (processedLyricsResp.every(mapping => mapping[1] == null)) return null;
 
     return lyrics.map(lyric => ({
         ...lyric,

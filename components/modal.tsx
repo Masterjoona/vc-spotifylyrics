@@ -6,22 +6,18 @@
 
 import { openImageModal } from "@utils/discord";
 import { ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
-import { React, Text } from "@webpack/common";
+import { React } from "@webpack/common";
 import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { cl, NoteSvg, scrollClasses, useLyrics } from "./util";
-
-const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
+import { SyncedLyric } from "../providers/types";
+import { cl, formatTime, NoteSvg, scrollClasses, useLyrics } from "./util";
+import { Paragraph } from "@components/index";
 
 function ModalHeaderContent({ track }: { track: Track | null; }) {
     if (!track) {
         return (
             <ModalHeader>
-                <Text variant="text-sm/semibold">No track playing</Text>
+                <Paragraph size="sm">No track playing</Paragraph>
             </ModalHeader>
         );
     }
@@ -41,9 +37,9 @@ function ModalHeaderContent({ track }: { track: Track | null; }) {
                     />
                 )}
                 <div>
-                    <Text selectable variant="text-sm/semibold">{track.name}</Text>
-                    <Text selectable variant="text-sm/normal">by {track.artists.map(a => a.name).join(", ")}</Text>
-                    <Text selectable variant="text-sm/normal">on {track.album.name}</Text>
+                    <Paragraph unselectable="off" size="sm" weight="semibold">{track.name}</Paragraph>
+                    <Paragraph unselectable="off" size="sm">by {track.artists.map(a => a.name).join(", ")}</Paragraph>
+                    <Paragraph unselectable="off" size="sm">on {track.album.name}</Paragraph>
                 </div>
             </div>
         </ModalHeader>
@@ -52,10 +48,10 @@ function ModalHeaderContent({ track }: { track: Track | null; }) {
 
 const modalCurrentLine = cl("modal-line-current");
 const modalLine = cl("modal-line");
+const modalLineTime = cl("modal-timestamp");
 
-export function LyricsModal({ props }: { props: ModalProps; }) {
-    const { track, lyricsInfo, currLrcIndex } = useLyrics({ scroll: false });
-    const currentLyrics = lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
+export function LyricsModal({ props, previewLyrics = void 0 }: { props: ModalProps, previewLyrics?: SyncedLyric[] | undefined; }) {
+    const { track, currLrcIndex, currentLyrics } = useLyrics({ scroll: false, previewLyrics });
 
     return (
         <ModalRoot {...props}>
@@ -64,22 +60,22 @@ export function LyricsModal({ props }: { props: ModalProps; }) {
                 <div className={`${cl("lyrics-modal-container")} ${scrollClasses.auto}`}>
                     {currentLyrics ? (
                         currentLyrics.map((line, i) => (
-                            <Text
+                            <Paragraph
                                 key={i}
-                                variant={currLrcIndex === i ? "text-md/semibold" : "text-sm/normal"}
-                                selectable
+                                size={currLrcIndex === i ? "md" : "sm"}
+                                weight={currLrcIndex === i ? "semibold" : "normal"}
                                 className={currLrcIndex === i ? modalCurrentLine : modalLine}
                             >
-                                <span className={cl("modal-timestamp")} onClick={() => SpotifyStore.seek(line.time * 1000)}>
+                                <span className={modalLineTime} onClick={() => SpotifyStore.seek(line.time * 1000)}>
                                     {formatTime(line.time)}
                                 </span>
                                 {line.text || NoteSvg()}
-                            </Text>
+                            </Paragraph>
                         ))
                     ) : (
-                        <Text variant="text-sm/normal" className={cl("modal-no-lyrics")}>
+                        <Paragraph size="sm" className={cl("modal-no-lyrics")}>
                             No lyrics available :(
-                        </Text>
+                        </Paragraph>
                     )}
                 </div>
             </ModalContent>
