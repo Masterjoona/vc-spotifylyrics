@@ -53,7 +53,7 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | undef
 
     if (cache?.[id]) return cache[id]!;
 
-    const nullEntry = nullLyricCache.get(track.id);
+    const nullEntry = nullLyricCache.get(id);
     const preferredProvider = settings.store.LyricsProvider;
 
     if (nullEntry?.[preferredProvider] && !settings.store.FallbackProvider) {
@@ -66,7 +66,7 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | undef
     const providersToTry = [preferredProvider, ...providers.filter(p => p !== preferredProvider)];
 
     for (const provider of providersToTry) {
-        if (nullLyricCache.get(track.id)?.[provider]) continue;
+        if (nullLyricCache.get(id)?.[provider]) continue;
 
         try {
             const syncedLyrics = await lyricFetchers[provider](track);
@@ -78,8 +78,8 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | undef
             }
         } catch (e) { }
 
-        const currentNulls = nullLyricCache.get(track.id) ?? {};
-        nullLyricCache.set(track.id, { ...currentNulls, [provider]: true });
+        const currentNulls = nullLyricCache.get(id) ?? {};
+        nullLyricCache.set(id, { ...currentNulls, [provider]: true });
 
         if (!settings.store.FallbackProvider) break;
     }
