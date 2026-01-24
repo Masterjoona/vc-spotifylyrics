@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { openModal } from "@utils/modal";
-import { ContextMenuApi, React, TooltipContainer, useEffect, useState, useStateFromStores } from "@webpack/common";
-import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 import { Paragraph } from "@components/Paragraph";
+import { openModal } from "@utils/modal";
+import { ContextMenuApi, React, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
 import settings from "../settings";
@@ -48,9 +48,13 @@ function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
                     </Paragraph>
                 </div>
             )) : ShowMusicNoteOnNoLyrics ? (
-                <TooltipContainer text="No synced lyrics found">
-                    <NoteSvg />
-                </TooltipContainer>
+                <Tooltip text="No synced lyrics found">
+                    {tooltipProps =>
+                        <div {...tooltipProps}>
+                            <NoteSvg />
+                        </div>
+                    }
+                </Tooltip>
             ) : null}
         </div>
     );

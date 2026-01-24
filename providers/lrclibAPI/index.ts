@@ -5,6 +5,7 @@
  */
 
 import type { Track } from "plugins/spotifyControls/SpotifyStore";
+
 import type { SyncedLyric } from "../types";
 
 const baseUrlLrclib = "https://lrclib.net/api/get";

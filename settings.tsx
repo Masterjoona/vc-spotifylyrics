@@ -5,6 +5,7 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
+import { Button, Paragraph } from "@components/index";
 import { openModal } from "@utils/modal";
 import { useAwaiter, useIntersection } from "@utils/react";
 import { OptionType } from "@utils/types";
@@ -16,7 +17,6 @@ import { SearchModal } from "./components/search";
 import { useLyrics } from "./components/util";
 import languages from "./providers/translator/languages";
 import { Provider } from "./providers/types";
-import { Button, Paragraph } from "@components/index";
 
 function Details() {
     const { lyricsInfo } = useLyrics({ scroll: false });

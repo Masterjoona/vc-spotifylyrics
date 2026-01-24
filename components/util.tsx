@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { classNameFactory } from "@api/Styles";
+import { classNameFactory } from "@utils/css";
 import { isNonNullish } from "@utils/guards";
-import { findByPropsLazy } from "@webpack";
+import { findCssClassesLazy } from "@webpack";
 import { React, useEffect, useMemo, useState, useStateFromStores } from "@webpack/common";
 import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
@@ -14,7 +14,7 @@ import { SpotifyLrcStore } from "../providers/store";
 import { SyncedLyric } from "../providers/types";
 import settings from "../settings";
 
-export const scrollClasses = findByPropsLazy("auto", "customTheme");
+export const scrollClasses = findCssClassesLazy("auto", "managedReactiveScroller", "customTheme");
 
 export const cl = classNameFactory("vc-spotify-lyrics-");
 
