@@ -8,7 +8,7 @@ import { classNameFactory } from "@utils/css";
 import { isNonNullish } from "@utils/guards";
 import { findCssClassesLazy } from "@webpack";
 import { React, useEffect, useMemo, useState, useStateFromStores } from "@webpack/common";
-import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
+import { SpotifyStore } from "@plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
 import { SyncedLyric } from "../providers/types";

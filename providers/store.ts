@@ -7,7 +7,7 @@
 import { showNotification } from "@api/Notifications";
 import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
-import { SpotifyStore, type Track } from "plugins/spotifyControls/SpotifyStore";
+import { SpotifyStore, type Track } from "@plugins/spotifyControls/SpotifyStore";
 
 import { getLyrics, identifyTrack, lyricFetchers, providers, updateLyrics } from "../api";
 import settings from "../settings";

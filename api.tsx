@@ -6,7 +6,7 @@
 
 import { DataStore } from "@api/index";
 import { hash as h64 } from "@intrnl/xxhash64";
-import { Track } from "plugins/spotifyControls/SpotifyStore";
+import { Track } from "@plugins/spotifyControls/SpotifyStore";
 
 import { getLyricsLrclib } from "./providers/lrclibAPI";
 import { getLyricsSpotify } from "./providers/SpotifyAPI";
