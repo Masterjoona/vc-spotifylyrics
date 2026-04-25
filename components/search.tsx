@@ -8,7 +8,8 @@ import { Button, Divider, Flex, Paragraph } from "@components/index";
 import { ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { FluxDispatcher, TextInput, useEffect, useState } from "@webpack/common";
 
-import { lrcFormatToSyncedLyrics, type LRCLIBTrack } from "../providers/lrclibAPI";
+import { mapLrcLyrics } from "../providers/common";
+import type { LRCLIBTrack } from "../providers/lrclibAPI";
 import { Provider } from "../providers/types";
 import { LyricsModal } from "./modal";
 import { cl, formatTime } from "./util";
@@ -57,7 +58,7 @@ export function SearchModal({ props, searchFor = "" }: { props: ModalProps, sear
         FluxDispatcher.dispatch({
             // @ts-ignore
             type: "SPOTIFY_LYRICS_UPDATE",
-            newLyrics: lrcFormatToSyncedLyrics(track.syncedLyrics!),
+            newLyrics: mapLrcLyrics(track.syncedLyrics!),
             provider: Provider.LRCLIB,
         });
     };
@@ -93,7 +94,7 @@ export function SearchModal({ props, searchFor = "" }: { props: ModalProps, sear
                                     </div>
                                     <div className="vc-spotify-lyrics-search-buttons">
                                         <Button
-                                            onClick={() => openModal(props => <LyricsModal props={props} previewLyrics={lrcFormatToSyncedLyrics(track.syncedLyrics!)} />)}
+                                            onClick={() => openModal(props => <LyricsModal props={props} previewLyrics={mapLrcLyrics(track.syncedLyrics!)} />)}
                                             size={"small"}
                                         >
                                             Preview

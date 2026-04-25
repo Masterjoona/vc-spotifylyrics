@@ -5,21 +5,24 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
+import { BaseText } from "@components/BaseText";
+import { Flex } from "@components/Flex";
 import { Button, Paragraph } from "@components/index";
 import { openModal } from "@utils/modal";
-import { useAwaiter, useIntersection } from "@utils/react";
+import { useAwaiter } from "@utils/react";
 import { OptionType } from "@utils/types";
-import { showToast, Toasts, useMemo } from "@webpack/common";
+import { Select, showToast, Toasts, useMemo } from "@webpack/common";
 
 import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
-import { Lyrics } from "./components/lyrics";
+import { CustomProvidersManager } from "./components/customProvidersManager";
 import { SearchModal } from "./components/search";
 import { useLyrics } from "./components/util";
+import { getCustomProviders } from "./providers/customProvider";
 import languages from "./providers/translator/languages";
 import { Provider } from "./providers/types";
 
 function Details() {
-    const { lyricsInfo } = useLyrics({ scroll: false });
+    const { lyricsInfo } = useLyrics();
 
     const [count, error, loading] = useAwaiter(
         useMemo(() => getLyricsCount, []),
@@ -34,6 +37,47 @@ function Details() {
             <Paragraph>Current lyrics provider: {lyricsInfo?.useLyric || "None"}</Paragraph>
             {loading ? <Paragraph>Loading lyrics count...</Paragraph> : error ? <Paragraph>Failed to get lyrics count</Paragraph> : <Paragraph>Lyrics count: {count}</Paragraph>}
         </>
+    );
+}
+
+function LyricsProviderSetting() {
+    const [customProviders, error, loading] = useAwaiter(getCustomProviders, {
+        fallbackValue: [],
+    });
+
+    const providerOptions = [
+        { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
+        { value: Provider.LRCLIB, label: "LRCLIB", default: true },
+        ...customProviders.map(provider => ({
+            value: provider.id,
+            label: provider.enabled ? provider.name : `${provider.name} (disabled)`,
+        })),
+    ];
+
+    if (!settings.store.LyricsProvider) {
+        settings.store.LyricsProvider = Provider.LRCLIB;
+    }
+
+    return (
+        <Flex flexDirection="column" gap={8}>
+            <BaseText size="md" weight="semibold">Where lyrics are fetched from</BaseText>
+            {loading ? (
+                <Paragraph>Loading custom providers...</Paragraph>
+            ) : error ? (
+                <Paragraph style={{ color: "var(--text-danger)" }}>
+                    Failed to load custom providers. Built-in providers are still available.
+                </Paragraph>
+            ) : null}
+            <Select
+                placeholder="Select provider"
+                options={providerOptions}
+                maxVisibleItems={5}
+                closeOnSelect={true}
+                select={v => settings.store.LyricsProvider = v}
+                isSelected={v => v === settings.store.LyricsProvider}
+                serialize={v => String(v)}
+            />
+        </Flex>
     );
 }
 
@@ -53,11 +97,8 @@ const settings = definePluginSettings({
     },
     LyricsProvider: {
         description: "Where lyrics are fetched from",
-        type: OptionType.SELECT,
-        options: [
-            { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
-            { value: Provider.LRCLIB, label: "LRCLIB", default: true },
-        ],
+        type: OptionType.COMPONENT,
+        component: () => <LyricsProviderSetting />,
     },
     FallbackProvider: {
         description: "When a lyrics provider fails, try other providers",
@@ -92,18 +133,6 @@ const settings = definePluginSettings({
         type: OptionType.NUMBER,
         default: 0,
     },
-    Display: {
-        description: "",
-        type: OptionType.COMPONENT,
-        component: () => {
-            const [rootRef, isIntersecting] = useIntersection();
-            return (
-                <div ref={rootRef}>
-                    <Lyrics scroll={isIntersecting} />
-                </div>
-            );
-        }
-    },
     Details: {
         description: "",
         type: OptionType.COMPONENT,
@@ -119,6 +148,11 @@ const settings = definePluginSettings({
                 </Button>
             );
         }
+    },
+    CustomProviders: {
+        description: "",
+        type: OptionType.COMPONENT,
+        component: () => <CustomProvidersManager />,
     },
     PurgeLyricsCache: {
         description: "Purge the lyrics cache",

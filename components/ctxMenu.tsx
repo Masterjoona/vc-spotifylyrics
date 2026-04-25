@@ -6,11 +6,14 @@
 
 import { copyWithToast } from "@utils/discord";
 import { openModal } from "@utils/modal";
+import { useAwaiter } from "@utils/react";
 import { findComponentByCodeLazy } from "@webpack";
 import { FluxDispatcher, Menu } from "@webpack/common";
 
 import { providers } from "../api";
+import { getCustomProviders } from "../providers/customProvider";
 import { lyricsAlternative } from "../providers/store";
+import { Provider } from "../providers/types";
 import { SearchModal } from "./search";
 import { useLyrics } from "./util";
 
@@ -19,9 +22,14 @@ const SearchIcon = findComponentByCodeLazy("1.42l-4.67-4.68ZM17", "children:(");
 
 export function LyricsContextMenu() {
     const { track, lyricsInfo, currentLyrics, currLrcIndex } = useLyrics({ scroll: false });
+    const [customProviders] = useAwaiter(getCustomProviders, {
+        fallbackValue: [],
+    });
 
     const currLyric = currentLyrics?.[currLrcIndex ?? NaN];
-    const hasLyrics = providers.some(provider => lyricsInfo?.lyricsVersions[provider]?.length);
+    const hasLyrics = [...providers, ...customProviders.map(p => p.id)].some(provider => lyricsInfo?.lyricsVersions[provider]?.length);
+
+    const allProviders = ([...providers, ...lyricsAlternative] as string[]).map(p => ({ name: p, id: p })).concat(customProviders.map(p => ({ name: p.name, id: p.id })));
 
     return (
         <Menu.Menu
@@ -54,19 +62,19 @@ export function LyricsContextMenu() {
                 id="spotify-lyrics-provider"
                 label="Lyrics Provider"
             >
-                {[...providers, ...lyricsAlternative].map(provider =>
+                {allProviders.map(provider =>
                     <Menu.MenuRadioItem
-                        key={`lyrics-provider-${provider}`}
-                        id={`switch-provider-${provider.toLowerCase()}`}
+                        key={`lyrics-provider-${provider.id}`}
+                        id={`switch-provider-${provider.id.toLowerCase()}`}
                         group="vc-spotify-lyrics-switch-provider"
-                        label={`${provider}${lyricsInfo?.lyricsVersions[provider] ? " (saved)" : ""}`}
-                        checked={provider === lyricsInfo?.useLyric}
-                        disabled={lyricsAlternative.includes(provider) && !hasLyrics}
+                        label={`${provider.name}${lyricsInfo?.lyricsVersions[provider.id] ? " (saved)" : ""}`}
+                        checked={provider.id === lyricsInfo?.useLyric}
+                        disabled={lyricsAlternative.includes(provider.id as Provider) && !hasLyrics}
                         action={() => {
                             FluxDispatcher.dispatch({
                                 // @ts-ignore
                                 type: "SPOTIFY_LYRICS_PROVIDER_CHANGE",
-                                provider: provider,
+                                provider: provider.id,
                             });
                         }}
                     />

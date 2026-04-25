@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { SpotifyStore } from "@plugins/spotifyControls/SpotifyStore";
 import { classNameFactory } from "@utils/css";
 import { isNonNullish } from "@utils/guards";
 import { findCssClassesLazy } from "@webpack";
 import { React, useEffect, useMemo, useState, useStateFromStores } from "@webpack/common";
-import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
 import { SyncedLyric } from "../providers/types";
@@ -109,8 +109,7 @@ export function useLyrics({ scroll = true, previewLyrics = void 0 }: { scroll?: 
     }, [currLrcIndex, scroll, lyricRefs]);
 
     useEffect(() => {
-        if (!currentLyrics || !lyricRefs) return;
-
+        if (!scroll || !currentLyrics || !lyricRefs) return;
         const [, nextLyricIndex] = getIndexes(currentLyrics, storePosition, LyricDelay);
 
         isNonNullish(nextLyricIndex) && !isNonNullish(currLrcIndex) && lyricRefs[nextLyricIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });

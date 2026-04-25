@@ -5,12 +5,13 @@
  */
 
 import { showNotification } from "@api/Notifications";
+import { SpotifyStore, type Track } from "@plugins/spotifyControls/SpotifyStore";
 import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
-import { SpotifyStore, type Track } from "plugins/spotifyControls/SpotifyStore";
 
-import { getLyrics, identifyTrack, lyricFetchers, providers, updateLyrics } from "../api";
+import { getLyrics, identifyTrack, providers, updateLyrics } from "../api";
 import settings from "../settings";
+import { LyricProviders } from ".";
 import { lyricsAlternativeFetchers } from "./translator";
 import { LyricsData, Provider } from "./types";
 
@@ -110,15 +111,17 @@ export const SpotifyLrcStore = proxyLazyWebpack(() => {
                 return;
             }
 
-            const newLyricsInfo = await lyricFetchers[e.provider](track);
-            if (!newLyricsInfo) {
+            const newLyrics = await LyricProviders[e.provider](track);
+            if (!newLyrics) {
                 showNotif("Lyrics fetch failed", `Failed to fetch ${e.provider} lyrics`);
                 return;
             }
 
-            lyricsInfo = newLyricsInfo;
+            if (lyricsInfo?.lyricsVersions[e.provider]) {
+                lyricsInfo.lyricsVersions[e.provider] = newLyrics;
+            }
 
-            await updateLyrics(identifiedTrack, newLyricsInfo.lyricsVersions[e.provider], e.provider);
+            await updateLyrics(identifiedTrack, newLyrics, e.provider);
 
             store.emitChange();
         },

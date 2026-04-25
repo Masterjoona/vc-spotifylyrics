@@ -5,10 +5,10 @@
  */
 
 import { Paragraph } from "@components/index";
+import { SpotifyStore, Track } from "@plugins/spotifyControls/SpotifyStore";
 import { openImageModal } from "@utils/discord";
 import { ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
 import { React } from "@webpack/common";
-import { SpotifyStore, Track } from "plugins/spotifyControls/SpotifyStore";
 
 import { SyncedLyric } from "../providers/types";
 import { cl, formatTime, NoteSvg, scrollClasses, useLyrics } from "./util";
@@ -66,15 +66,15 @@ export function LyricsModal({ props, previewLyrics = void 0 }: { props: ModalPro
                                 weight={currLrcIndex === i ? "semibold" : "normal"}
                                 className={currLrcIndex === i ? modalCurrentLine : modalLine}
                             >
-                                <span className={modalLineTime} onClick={() => SpotifyStore.seek(line.time * 1000)}>
+                                <div className={modalLineTime} onClick={() => SpotifyStore.seek(line.time * 1000)}>
                                     {formatTime(line.time)}
-                                </span>
-                                {line.text || NoteSvg()}
+                                </div>
+                                <div>{line.text || NoteSvg()}</div>
                             </Paragraph>
                         ))
                     ) : (
                         <Paragraph size="sm" className={cl("modal-no-lyrics")}>
-                            No lyrics available :(
+                            No lyrics available :&#40;
                         </Paragraph>
                     )}
                 </div>

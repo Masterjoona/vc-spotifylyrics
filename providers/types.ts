@@ -17,7 +17,16 @@ export enum Provider {
     None = "None",
 }
 
+export interface CustomProvider {
+    id: string;
+    name: string;
+    url: string;
+    enabled: boolean;
+    responseFormat?: "spotify" | "lrc";
+    responsePath?: string;
+}
+
 export interface LyricsData {
-    lyricsVersions: Partial<Record<Provider, SyncedLyric[] | undefined>>;
-    useLyric: Provider;
+    lyricsVersions: Partial<Record<Provider | string, SyncedLyric[] | undefined>>;
+    useLyric: Provider | string;
 }

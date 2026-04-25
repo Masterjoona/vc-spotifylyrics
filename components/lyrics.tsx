@@ -5,9 +5,9 @@
  */
 
 import { Paragraph } from "@components/Paragraph";
+import { SpotifyStore } from "@plugins/spotifyControls/SpotifyStore";
 import { openModal } from "@utils/modal";
 import { ContextMenuApi, React, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
-import { SpotifyStore } from "plugins/spotifyControls/SpotifyStore";
 
 import { SpotifyLrcStore } from "../providers/store";
 import settings from "../settings";

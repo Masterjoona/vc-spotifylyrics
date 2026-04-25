@@ -6,10 +6,10 @@
 
 import { DataStore } from "@api/index";
 import { hash as h64 } from "@intrnl/xxhash64";
-import { Track } from "plugins/spotifyControls/SpotifyStore";
+import { Track } from "@plugins/spotifyControls/SpotifyStore";
 
-import { getLyricsLrclib } from "./providers/lrclibAPI";
-import { getLyricsSpotify } from "./providers/SpotifyAPI";
+import { LyricProviders } from "./providers";
+import { fetchCustomLyrics, getCustomProviders } from "./providers/customProvider";
 import { LyricsData, Provider, SyncedLyric } from "./providers/types";
 import settings from "./settings";
 
@@ -24,19 +24,14 @@ interface NullLyricCacheEntry {
 
 const nullLyricCache = new Map<string, NullLyricCacheEntry>();
 
-export const lyricFetchers = {
-    [Provider.Spotify]: async (track: Track) => await getLyricsSpotify(track.id),
-    [Provider.LRCLIB]: getLyricsLrclib,
-} as const;
-
-export const providers = Object.keys(lyricFetchers) as Provider[];
+export const providers = Object.keys(LyricProviders) as Provider[];
 
 async function getCache() {
     const cache = await DataStore.get(LyricsCacheKey) as Record<string, LyricsData | null>;
     return cache ?? {};
 }
 
-export function makeCacheData(provider: Provider, lyrics: SyncedLyric[]): LyricsData {
+export function makeCacheData(provider: Provider | string, lyrics: SyncedLyric[]): LyricsData {
     return {
         useLyric: provider,
         lyricsVersions: {
@@ -63,16 +58,30 @@ export async function getLyrics(track: Track | null): Promise<LyricsData | undef
         return undefined;
     }
 
-    const providersToTry = [preferredProvider, ...providers.filter(p => p !== preferredProvider)];
+    const customProviders = await getCustomProviders();
+    const enabledCustomProviders = customProviders.filter(p => p.enabled);
+
+    const providersToTry = [
+        preferredProvider,
+        ...providers.filter(p => p !== preferredProvider),
+        ...enabledCustomProviders.map(p => p.id).filter(id => id !== preferredProvider)
+    ];
 
     for (const provider of providersToTry) {
         if (nullLyricCache.get(id)?.[provider]) continue;
 
         try {
-            const syncedLyrics = await lyricFetchers[provider](track);
+            let syncedLyrics: SyncedLyric[] | null = null;
+
+            const customProvider = enabledCustomProviders.find(p => p.id === provider);
+            if (customProvider) {
+                syncedLyrics = await fetchCustomLyrics(customProvider, track);
+            } else if (LyricProviders[provider]) {
+                syncedLyrics = await LyricProviders[provider](track);
+            }
 
             if (syncedLyrics?.length) {
-                const lyricsInfo = makeCacheData(provider, syncedLyrics);
+                const lyricsInfo = makeCacheData(provider as Provider, syncedLyrics);
                 await DataStore.set(LyricsCacheKey, { ...await getCache(), [id]: lyricsInfo });
                 return lyricsInfo;
             }
