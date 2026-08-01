@@ -66,7 +66,7 @@ export function Lyrics({ scroll = true }: { scroll?: boolean; } = {}) {
     const track = useStateFromStores(
         [SpotifyStore],
         () => SpotifyStore.track,
-        null,
+        [],
         (prev, next) => (prev?.id ? prev.id === next?.id : prev?.name === next?.name)
     );
 

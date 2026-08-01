@@ -46,7 +46,7 @@ function LyricsProviderSetting() {
     });
 
     const providerOptions = [
-        { value: Provider.Spotify, label: "Spotify (Musixmatch)" },
+        { value: Provider.Spotify, label: "Spotify (Musixmatch) (disabled)" },
         { value: Provider.LRCLIB, label: "LRCLIB", default: true },
         ...customProviders.map(provider => ({
             value: provider.id,

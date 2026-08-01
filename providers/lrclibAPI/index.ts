@@ -34,11 +34,7 @@ export default async function getLyricsLrclib(track: Track) {
     const params = new URLSearchParams(info);
     const url = `${baseUrlLrclib}?${params.toString()}`;
 
-    const data = await safeFetchJson<LRCLIBTrack>(url, {
-        headers: {
-            "User-Agent": "SpotifyLyrics for Vencord (https://github.com/Masterjoona/vc-spotifylyrics)"
-        }
-    });
+    const data = await safeFetchJson<LRCLIBTrack>(url);
 
     if (!data) return null;
 

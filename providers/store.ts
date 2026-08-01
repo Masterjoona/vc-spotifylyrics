@@ -6,16 +6,28 @@
 
 import { showNotification } from "@api/Notifications";
 import { SpotifyStore, type Track } from "@plugins/spotifyControls/SpotifyStore";
+import { Logger } from "@utils/index";
 import { proxyLazyWebpack } from "@webpack";
 import { Flux, FluxDispatcher } from "@webpack/common";
 
 import { getLyrics, identifyTrack, providers, updateLyrics } from "../api";
 import settings from "../settings";
 import { LyricProviders } from ".";
+import { getCustomProviders } from "./customProvider";
 import { lyricsAlternativeFetchers } from "./translator";
-import { LyricsData, Provider } from "./types";
+import { LyricsData, Provider, SyncedLyric } from "./types";
 
 export const lyricsAlternative = [Provider.Translated, Provider.Romanized];
+
+const logger = new Logger("SpotifyLyrics");
+
+interface SpotifyLyricsDispatchEvent {
+    type: string;
+    provider?: Provider;
+    providerLabel?: string;
+    newLyrics?: SyncedLyric[];
+    track?: Track | null;
+}
 
 function showNotif(title: string, body: string) {
     if (settings.store.ShowFailedToasts) {
@@ -28,128 +40,193 @@ function showNotif(title: string, body: string) {
     }
 }
 
+let lyricsInfo: LyricsData | undefined = void 0;
+
+function setLyricsVersion(provider: Provider, lyrics: SyncedLyric[]) {
+    if (!lyricsInfo) {
+        lyricsInfo = {
+            useLyric: provider,
+            lyricsVersions: { [provider]: lyrics }
+        };
+        return;
+    }
+
+    lyricsInfo = {
+        ...lyricsInfo,
+        useLyric: provider,
+        lyricsVersions: {
+            ...lyricsInfo.lyricsVersions,
+            [provider]: lyrics
+        }
+    };
+}
+
+
+function getAlternativeTypeLabel(provider: Provider): string {
+    return provider === Provider.Translated ? "translate" : "romanize";
+}
+
 export const SpotifyLrcStore = proxyLazyWebpack(() => {
-    let lyricsInfo: LyricsData | undefined = void 0;
-    const fetchingsTracks = new Set<string>();
+    let currentTrackId: string | undefined;
+    const fetchingsTracks = new Map<string, Promise<void>>();
 
     class SpotifyLrcStore extends Flux.Store {
         init() { }
+
         get lyricsInfo() {
             return lyricsInfo;
         }
+
     }
 
-    const store = new SpotifyLrcStore(FluxDispatcher, {
-        async SPOTIFY_PLAYER_STATE(e: { track: Track | null; }) {
-            if (!e.track) return;
+    async function handlePlayerStateChange(track: Track) {
+        const identifiedTrack = identifyTrack(track);
 
-            const identifiedTrack = identifyTrack(e.track);
-            if (fetchingsTracks.has(identifiedTrack)) return;
+        if (currentTrackId === identifiedTrack && lyricsInfo) {
+            return;
+        }
 
-            fetchingsTracks.add(identifiedTrack);
-            lyricsInfo = await getLyrics(e.track);
+        const existingFetch = fetchingsTracks.get(identifiedTrack);
+        if (existingFetch) return existingFetch;
 
-            const { LyricsConversion } = settings.store;
-            if (LyricsConversion !== Provider.None) {
-                FluxDispatcher.dispatch({
-                    // @ts-ignore
-                    type: "SPOTIFY_LYRICS_PROVIDER_CHANGE",
-                    provider: LyricsConversion
-                });
+        if (currentTrackId !== identifiedTrack) {
+            currentTrackId = identifiedTrack;
+        }
+
+        const fetchPromise = (async () => {
+            try {
+                const lyrics = await getLyrics(track);
+
+                if (currentTrackId === identifiedTrack) {
+                    lyricsInfo = lyrics;
+                    store.emitChange();
+
+                    const { LyricsConversion } = settings.store;
+                    if (LyricsConversion !== Provider.None) {
+                        await dispatchProviderChange(LyricsConversion);
+                    }
+                }
+            } catch (error) {
+                logger.error(`Failed to fetch lyrics for ${identifiedTrack}:`, error);
+                if (currentTrackId === identifiedTrack) {
+                    lyricsInfo = undefined;
+                    store.emitChange();
+                }
+            } finally {
+                fetchingsTracks.delete(identifiedTrack);
             }
+        })();
 
-            fetchingsTracks.delete(identifiedTrack);
-        },
+        lyricsInfo = undefined;
+        store.emitChange();
+        fetchingsTracks.set(identifiedTrack, fetchPromise);
+        return fetchPromise;
+    }
 
-        // @ts-ignore
-        async SPOTIFY_LYRICS_PROVIDER_CHANGE(e: { provider: Provider; }) {
-            const { track } = SpotifyStore;
-            if (!track) return;
-            const currentInfo = await getLyrics(track);
-            const { provider } = e;
-            if (currentInfo?.useLyric === provider) return;
+    async function dispatchProviderChange(provider: Provider, providerLabel?: string) {
+        const { track } = SpotifyStore;
+        if (!track) return;
 
-            const identifiedTrack = identifyTrack(track);
+        const identifiedTrack = identifyTrack(track);
 
-            if (currentInfo?.lyricsVersions[provider]) {
-                lyricsInfo = { ...currentInfo, useLyric: provider };
+        if (currentTrackId !== identifiedTrack) return;
+        const providerLabelToUse = providerLabel || provider;
 
-                await updateLyrics(identifiedTrack, currentInfo.lyricsVersions[provider]!, provider);
+        try {
+            if (lyricsInfo?.lyricsVersions[provider]) {
+                lyricsInfo = { ...lyricsInfo, useLyric: provider };
+                await updateLyrics(identifiedTrack, lyricsInfo.lyricsVersions[provider]!, provider);
                 store.emitChange();
                 return;
             }
 
             if (lyricsAlternative.includes(provider)) {
-                const originalLyrics = currentInfo?.lyricsVersions[settings.store.LyricsProvider] || providers
-                    .map(p => currentInfo?.lyricsVersions[p])
-                    .find(Boolean);
+                await handleAlternativeFormat(provider, identifiedTrack);
+                return;
+            }
 
-                if (!originalLyrics || !currentInfo) {
-                    showNotif("No lyrics", `No lyrics to ${provider === Provider.Translated ? "translate" : "romanize"}`);
-                    return;
-                }
+            const newLyrics = await LyricProviders[provider](track);
+            if (!newLyrics) {
+                showNotif("Lyrics fetch failed", `Failed to fetch ${providerLabelToUse} lyrics`);
+                return;
+            }
 
-                const fetchResult = await lyricsAlternativeFetchers[provider](originalLyrics);
+            await handleLyricsUpdate(newLyrics, provider, track);
+        } catch (error) {
+            logger.error(`Failed to change provider to ${providerLabel}-${provider}:`, error);
+            showNotif("Lyrics fetch failed", `Failed to fetch ${providerLabelToUse} lyrics`);
+        }
+    }
 
-                if (!fetchResult) {
-                    showNotif("Lyrics fetch failed", `Failed to fetch ${provider === Provider.Translated ? "translation" : "romanization"}`);
-                    return;
-                }
 
-                lyricsInfo = {
-                    ...currentInfo,
-                    useLyric: provider,
-                    lyricsVersions: {
-                        ...currentInfo.lyricsVersions,
-                        [provider]: fetchResult
-                    }
-                };
+    async function handleAlternativeFormat(provider: Provider, identifiedTrack: string) {
+        if (currentTrackId !== identifiedTrack) return;
 
-                await updateLyrics(identifiedTrack, fetchResult, provider);
+        if (!lyricsInfo) {
+            showNotif("No lyrics", `No lyrics to ${getAlternativeTypeLabel(provider)}`);
+            return;
+        }
 
+        const customProviders = await getCustomProviders();
+
+        const originalLyrics = lyricsInfo.lyricsVersions[settings.store.LyricsProvider]
+            || [...providers, ...customProviders.map(c => c.id)].map(p => lyricsInfo?.lyricsVersions[p]).find(Boolean);
+
+        if (!originalLyrics) {
+            showNotif("No lyrics", `No lyrics to ${getAlternativeTypeLabel(provider)}`);
+            return;
+        }
+
+        const fetchResult = await lyricsAlternativeFetchers[provider](originalLyrics);
+        if (!fetchResult) {
+            showNotif("Lyrics fetch failed", `Failed to fetch ${getAlternativeTypeLabel(provider)}`);
+            return;
+        }
+
+        if (currentTrackId !== identifiedTrack) return;
+
+        setLyricsVersion(provider, fetchResult);
+
+        store.emitChange();
+        await updateLyrics(identifiedTrack, fetchResult, provider);
+    }
+
+    async function handleLyricsUpdate(newLyrics: SyncedLyric[], provider: Provider, track: Track) {
+        const identifiedTrack = identifyTrack(track);
+
+        if (currentTrackId !== identifiedTrack) return;
+
+        setLyricsVersion(provider, newLyrics);
+
+        store.emitChange();
+        await updateLyrics(identifiedTrack, newLyrics, provider);
+    }
+
+    const store = new SpotifyLrcStore(FluxDispatcher, {
+        async SPOTIFY_PLAYER_STATE(e: { track: Track | null; }) {
+            if (!e.track) {
+                currentTrackId = undefined;
+                lyricsInfo = undefined;
                 store.emitChange();
                 return;
             }
 
-            const newLyrics = await LyricProviders[e.provider](track);
-            if (!newLyrics) {
-                showNotif("Lyrics fetch failed", `Failed to fetch ${e.provider} lyrics`);
-                return;
-            }
-
-            if (lyricsInfo?.lyricsVersions[e.provider]) {
-                lyricsInfo.lyricsVersions[e.provider] = newLyrics;
-            }
-
-            await updateLyrics(identifiedTrack, newLyrics, e.provider);
-
-            store.emitChange();
+            await handlePlayerStateChange(e.track);
         },
 
         // @ts-ignore
-        async SPOTIFY_LYRICS_UPDATE(e: { newLyrics: SyncedLyric[]; provider: Provider; }) {
-            const { newLyrics, provider } = e;
+        async SPOTIFY_LYRICS_PROVIDER_CHANGE(e: SpotifyLyricsDispatchEvent) {
+            if (!e.provider || e.provider === Provider.None) return;
+            if (lyricsInfo?.useLyric === e.provider) return;
+
+            await dispatchProviderChange(e.provider, e.providerLabel);
+        },
+
+        async SPOTIFY_LYRICS_UPDATE(e: SpotifyLyricsDispatchEvent) {
             const { track } = SpotifyStore;
-            if (!track) return;
-            if (!lyricsInfo) {
-                lyricsInfo = {
-                    useLyric: provider,
-                    lyricsVersions: {
-                        [provider]: newLyrics
-                    }
-                };
-            } else {
-                lyricsInfo = {
-                    ...lyricsInfo,
-                    useLyric: provider,
-                    lyricsVersions: {
-                        ...lyricsInfo.lyricsVersions,
-                        [provider]: newLyrics
-                    }
-                };
-            }
-            await updateLyrics(identifyTrack(track), newLyrics, provider);
-            store.emitChange();
+            if (!track || !e.newLyrics || !e.provider) return;
+
+            await handleLyricsUpdate(e.newLyrics, e.provider, track);
         }
     });
 

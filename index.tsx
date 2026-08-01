@@ -24,7 +24,7 @@ export default definePlugin({
     dependencies: ["SpotifyControls"],
     patches: [
         {
-            find: 'Vencord.Plugins.plugins["SpotifyControls"].PanelWrapper',
+            find: "#{intl::USER_PROFILE_ACCOUNT_POPOUT_BUTTON_A11Y_LABEL}",
             replacement: {
                 match: /Vencord\.Plugins\.plugins\["SpotifyControls"]\.PanelWrapper/,
                 replace: "$self.FakePanelWrapper",

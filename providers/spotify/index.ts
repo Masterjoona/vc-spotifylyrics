@@ -11,6 +11,7 @@ import { SyncedLyric } from "../types";
 import { VercelLyricsAPIResp } from "./types";
 
 export default async (track: Track): Promise<SyncedLyric[] | null> => {
+    return null; // Disabled
     const data = await safeFetchJson<VercelLyricsAPIResp>(
         `https://spotify-lyrics-api-pi.vercel.app/?trackid=${track.id}`
     );

@@ -6,10 +6,27 @@
 
 import { ConnectSrc, CspPolicies } from "@main/csp";
 import { RendererSettings } from "@main/settings";
+import { app, session } from "electron";
+
+const SAFE_DOMAINS = [
+    "lrclib.net",
+    // "spotify-lyrics-api-pi.vercel.app",
+    "translate.googleapis.com",
+    "lyrics.joona.moe"
+];
 
 if (RendererSettings.store.plugins?.SpotifyLyrics?.enabled) {
-    CspPolicies["lrclib.net"] = ConnectSrc;
-    CspPolicies["spotify-lyrics-api-pi.vercel.app"] = ConnectSrc;
-    CspPolicies["translate.googleapis.com"] = ConnectSrc;
-    CspPolicies["lyrics.joona.moe"] = ConnectSrc;
+    for (const domain of SAFE_DOMAINS) {
+        CspPolicies[domain] = ConnectSrc;
+    }
 }
+
+app.whenReady().then(() => {
+    session.defaultSession.webRequest.onBeforeSendHeaders(
+        { urls: SAFE_DOMAINS.map(domain => `https://${domain}/*`) },
+        (details, callback) => {
+            details.requestHeaders["User-Agent"] = "SpotifyLyrics for Vencord (https://github.com/Masterjoona/vc-spotifylyrics)";
+            callback({ requestHeaders: details.requestHeaders });
+        }
+    );
+});

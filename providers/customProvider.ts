@@ -81,11 +81,7 @@ export async function fetchCustomLyrics(provider: CustomProvider, track: Track):
             .replace("{track}", encodeURIComponent(track.name || ""))
             .replace("{id}", encodeURIComponent(track.id || ""));
 
-        let data = await safeFetchJson<any>(url, {
-            headers: {
-                "User-Agent": "SpotifyLyrics for Vencord (https://github.com/Masterjoona/vc-spotifylyrics)"
-            }
-        });
+        let data = await safeFetchJson<any>(url);
         if (!data) return null;
 
         if (provider.responsePath) {
