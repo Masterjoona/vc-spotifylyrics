@@ -13,7 +13,7 @@ import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { identity } from "@utils/misc";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
-import { Select, showToast, TextInput, Toasts, useEffect, useState } from "@webpack/common";
+import { Select, showToast, TextInput, useEffect, useState } from "@webpack/common";
 
 import { addCustomProvider, fetchCustomLyrics, getCustomProviders, removeCustomProvider, updateCustomProvider } from "../providers/customProvider";
 import { CustomProvider } from "../providers/types";
@@ -72,7 +72,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                     setError("Invalid domain. Please check the URL and try again.");
                     return;
                 case "ok":
-                    showToast("CSP override added. You can now save this provider.", Toasts.Type.SUCCESS);
+                    showToast({ text: "CSP override added. You can now save this provider.", variant: "success" });
                     break;
             }
         }
@@ -89,10 +89,10 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
 
             if (provider) {
                 await updateCustomProvider(provider.id, newProvider);
-                showToast("Provider updated", Toasts.Type.SUCCESS);
+                showToast({ text: "Provider updated", variant: "success" });
             } else {
                 await addCustomProvider(newProvider);
-                showToast("Provider added", Toasts.Type.SUCCESS);
+                showToast({ text: "Provider added", variant: "success" });
             }
 
             await onSaved();
@@ -140,7 +140,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
 
             const lyrics = await fetchCustomLyrics(testProvider, dummyTrack);
             if (lyrics && lyrics.length > 0) {
-                showToast("Test successful! Lyrics were fetched.", Toasts.Type.SUCCESS);
+                showToast({ text: "Test successful! Lyrics were fetched.", variant: "success" });
             } else {
                 if (cspError) {
                     setError("Test failed due to CSP restrictions. Please save and follow the instructions to add a CSP override for this provider.");
@@ -261,7 +261,7 @@ export function CustomProvidersManager() {
             setProviders(data);
         } catch (e) {
             console.error("Failed to load custom providers:", e);
-            showToast("Failed to load providers", Toasts.Type.FAILURE);
+            showToast({ text: "Failed to load providers", variant: "critical" });
         } finally {
             setLoading(false);
         }
@@ -271,9 +271,9 @@ export function CustomProvidersManager() {
         try {
             await removeCustomProvider(id);
             setProviders(providers.filter(p => p.id !== id));
-            showToast("Provider deleted", Toasts.Type.SUCCESS);
+            showToast({ text: "Provider deleted", variant: "success" });
         } catch (e) {
-            showToast("Failed to delete provider", Toasts.Type.FAILURE);
+            showToast({ text: "Failed to delete provider", variant: "critical" });
         }
     };
 
@@ -286,7 +286,7 @@ export function CustomProvidersManager() {
                 )
             );
         } catch (e) {
-            showToast("Failed to update provider", Toasts.Type.FAILURE);
+            showToast({ text: "Failed to update provider", variant: "critical" });
         }
     };
 
