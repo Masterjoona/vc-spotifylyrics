@@ -77,7 +77,7 @@ export function SearchModal({ props, searchFor = "" }: { props: RenderModalProps
                 <div className="vc-spotify-lyrics-search-results">
                     {results.length ? results.map((track, i) => (
                         <div key={i} className={clSearchResult}>
-                            <SearchResult track={track} />
+                            <SearchResult track={track} onClose={props.onClose} />
                         </div>
                     )) : (
                         <Paragraph>No results</Paragraph>
@@ -89,7 +89,7 @@ export function SearchModal({ props, searchFor = "" }: { props: RenderModalProps
 }
 
 
-function SearchResult({ track }: { track: LRCLIBTrack; }) {
+function SearchResult({ track, onClose }: { track: LRCLIBTrack; onClose: () => void; }) {
     return (
         <Flex style={{ justifyContent: "space-between" }}>
             <div>
@@ -109,7 +109,7 @@ function SearchResult({ track }: { track: LRCLIBTrack; }) {
                 </Button>
                 <Button
                     onClick={() => {
-                        props.onClose();
+                        onClose();
                         handleSelect(track);
                     }}
                     size={"small"}

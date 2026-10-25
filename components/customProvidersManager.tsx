@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { BaseText } from "@components/BaseText";
 import { Button } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { FormSwitch } from "@components/FormSwitch";
@@ -12,14 +11,14 @@ import { HeadingSecondary } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { identity } from "@utils/misc";
-import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
-import { Select, showToast, TextInput, useEffect, useState } from "@webpack/common";
+import { RenderModalProps } from "@vencord/discord-types";
+import { Modal, openModal, Select, showToast, TextInput, useEffect, useState } from "@webpack/common";
 
 import { addCustomProvider, fetchCustomLyrics, getCustomProviders, removeCustomProvider, updateCustomProvider } from "../providers/customProvider";
 import { CustomProvider } from "../providers/types";
 
 interface CustomProviderModalProps {
-    modalProps: ModalProps;
+    modalProps: RenderModalProps;
     provider?: CustomProvider;
     onSaved: () => Promise<void>;
 }
@@ -155,95 +154,95 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
     };
 
     return (
-        <ModalRoot {...modalProps} size={ModalSize.MEDIUM}>
-            <ModalHeader>
-                <BaseText size="lg" weight="semibold" style={{ flexGrow: 1 }}>
-                    {provider ? "Edit Custom Provider" : "Add Custom Provider"}
-                </BaseText>
-                <ModalCloseButton onClick={modalProps.onClose} />
-            </ModalHeader>
+        <Modal
+            {...modalProps}
+            size="lg"
+            title={provider ? "Edit Custom Provider" : "Add Custom Provider"}
+            actions={[
+                {
+                    text: "Save",
+                    variant: "primary",
+                    onClick: handleSave
+                },
+                {
+                    text: "Test",
+                    variant: "secondary",
+                    onClick: handleTest
+                },
+                {
+                    text: "Cancel",
+                    variant: "secondary",
+                    onClick: modalProps.onClose
+                }
+            ]}
+        >
+            <Flex flexDirection="column" gap={12} style={{ padding: "4px 0" }}>
+                <HeadingSecondary>Provider Name</HeadingSecondary>
+                <TextInput
+                    type="text"
+                    value={name}
+                    onChange={v => {
+                        setName(v);
+                        setError("");
+                    }}
+                    placeholder="e.g., My Lyrics API"
+                />
+                <HeadingSecondary>API URL</HeadingSecondary>
+                <TextInput
+                    type="text"
+                    value={rawUrl}
+                    onChange={v => {
+                        setUrl(v);
+                        setError("");
+                    }}
+                    placeholder="https://api.example.com/lyrics?artist={artist}&track={track}&id={id}"
+                />
+                <Paragraph>
+                    Use {"{artist}"}, {"{track}"}, or {"{id}"} as placeholders.
+                </Paragraph>
 
-            <ModalContent>
-                <Flex flexDirection="column" gap={12} style={{ padding: "4px 0" }}>
-                    <HeadingSecondary>Provider Name</HeadingSecondary>
-                    <TextInput
-                        type="text"
-                        value={name}
-                        onChange={v => {
-                            setName(v);
-                            setError("");
-                        }}
-                        placeholder="e.g., My Lyrics API"
-                    />
-                    <HeadingSecondary>API URL</HeadingSecondary>
-                    <TextInput
-                        type="text"
-                        value={rawUrl}
-                        onChange={v => {
-                            setUrl(v);
-                            setError("");
-                        }}
-                        placeholder="https://api.example.com/lyrics?artist={artist}&track={track}&id={id}"
-                    />
-                    <Paragraph>
-                        Use {"{artist}"}, {"{track}"}, or {"{id}"} as placeholders.
-                    </Paragraph>
+                <HeadingSecondary>Response Format</HeadingSecondary>
+                <Select
+                    options={[
+                        { label: "Spotify", value: "spotify" },
+                        { label: "LRC (LRC parser format)", value: "lrc" },
+                    ]}
+                    closeOnSelect={true}
+                    select={v => setResponseFormat(v)}
+                    isSelected={v => v === responseFormat}
+                    serialize={identity}
+                />
 
-                    <HeadingSecondary>Response Format</HeadingSecondary>
-                    <Select
-                        options={[
-                            { label: "Spotify", value: "spotify" },
-                            { label: "LRC (LRC parser format)", value: "lrc" },
-                        ]}
-                        closeOnSelect={true}
-                        select={v => setResponseFormat(v)}
-                        isSelected={v => v === responseFormat}
-                        serialize={identity}
-                    />
-
-                    {responseFormat === "lrc" ?
-                        <>
-                            <HeadingSecondary>Response Path (Optional)</HeadingSecondary>
-                            <TextInput
-                                type="text"
-                                value={responsePath}
-                                onChange={setResponsePath}
-                                placeholder="e.g., data.lyrics or result.lines"
-                            />
-                            <Paragraph>
-                                Use dot notation to extract nested arrays, for example: data.lyrics
-                            </Paragraph>
-                        </>
-                        : null}
-
-                    <FormSwitch
-                        title="Enabled"
-                        description="Use this provider in fallback order"
-                        value={enabled}
-                        onChange={setEnabled}
-                        hideBorder
-                    />
-
-                    {!!error && (
+                {responseFormat === "lrc" ?
+                    <>
+                        <HeadingSecondary>Response Path (Optional)</HeadingSecondary>
+                        <TextInput
+                            type="text"
+                            value={responsePath}
+                            onChange={setResponsePath}
+                            placeholder="e.g., data.lyrics or result.lines"
+                        />
                         <Paragraph>
-                            {error}
+                            Use dot notation to extract nested arrays, for example: data.lyrics
                         </Paragraph>
-                    )}
-                </Flex>
-            </ModalContent>
+                    </>
+                    : null}
 
-            <ModalFooter>
-                <Button onClick={handleSave} variant="primary">
-                    Save
-                </Button>
-                <Button onClick={handleTest} variant="secondary">
-                    Test
-                </Button>
-                <Button onClick={modalProps.onClose} variant="secondary">
-                    Cancel
-                </Button>
-            </ModalFooter>
-        </ModalRoot>
+                <FormSwitch
+                    title="Enabled"
+                    description="Use this provider in fallback order"
+                    value={enabled}
+                    onChange={setEnabled}
+                    hideBorder
+                />
+
+                {!!error && (
+                    <Paragraph>
+                        {error}
+                    </Paragraph>
+                )}
+            </Flex>
+        </Modal>
     );
 }
 
@@ -346,11 +345,11 @@ export function CustomProvidersManager() {
                                         checked={provider.enabled}
                                         onChange={() => handleToggle(provider)}
                                     />
-                                    <BaseText size="md" weight="medium" style={{ opacity: provider.enabled ? 1 : 0.6 }}>
+                                    <Paragraph size="md" weight="medium" style={{ opacity: provider.enabled ? 1 : 0.6 }}>
                                         {provider.name}
-                                    </BaseText>
+                                    </Paragraph>
                                     {provider.responseFormat && (
-                                        <BaseText
+                                        <Paragraph
                                             size="sm"
                                             weight="medium"
                                             style={{
@@ -360,7 +359,7 @@ export function CustomProvidersManager() {
                                             }}
                                         >
                                             {provider.responseFormat}
-                                        </BaseText>
+                                        </Paragraph>
                                     )}
                                 </Flex>
                                 <Paragraph

@@ -5,13 +5,11 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { BaseText } from "@components/BaseText";
 import { Flex } from "@components/Flex";
 import { Button, Paragraph } from "@components/index";
-import { openModal } from "@utils/modal";
 import { useAwaiter } from "@utils/react";
 import { OptionType } from "@utils/types";
-import { Select, showToast, useMemo } from "@webpack/common";
+import { openModal, Select, showToast, useMemo } from "@webpack/common";
 
 import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
 import { CustomProvidersManager } from "./components/customProvidersManager";
@@ -60,7 +58,7 @@ function LyricsProviderSetting() {
 
     return (
         <Flex flexDirection="column" gap={8}>
-            <BaseText size="md" weight="semibold">Where lyrics are fetched from</BaseText>
+            <Paragraph size="md" weight="semibold">Where lyrics are fetched from</Paragraph>
             {loading ? (
                 <Paragraph>Loading custom providers...</Paragraph>
             ) : error ? (
