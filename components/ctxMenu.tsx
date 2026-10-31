@@ -5,10 +5,9 @@
  */
 
 import { copyWithToast } from "@utils/discord";
-import { openModal } from "@utils/modal";
 import { useAwaiter } from "@utils/react";
 import { findComponentByCodeLazy } from "@webpack";
-import { FluxDispatcher, Menu } from "@webpack/common";
+import { FluxDispatcher, Menu, openModal } from "@webpack/common";
 
 import { providers } from "../api";
 import { getCustomProviders } from "../providers/customProvider";
