@@ -7,7 +7,7 @@
 import { Button } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { FormSwitch } from "@components/FormSwitch";
-import { HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { identity } from "@utils/misc";
@@ -177,7 +177,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
             ]}
         >
             <Flex flexDirection="column" gap={12} style={{ padding: "4px 0" }}>
-                <HeadingSecondary>Provider Name</HeadingSecondary>
+                <Heading tag="h3">Provider Name</Heading>
                 <TextInput
                     type="text"
                     value={name}
@@ -187,7 +187,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                     }}
                     placeholder="e.g., My Lyrics API"
                 />
-                <HeadingSecondary>API URL</HeadingSecondary>
+                <Heading tag="h3">API URL</Heading>
                 <TextInput
                     type="text"
                     value={rawUrl}
@@ -201,7 +201,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                     Use {"{artist}"}, {"{track}"}, or {"{id}"} as placeholders.
                 </Paragraph>
 
-                <HeadingSecondary>Response Format</HeadingSecondary>
+                <Heading tag="h3">Response Format</Heading>
                 <Select
                     options={[
                         { label: "Spotify", value: "spotify" },
@@ -215,7 +215,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
 
                 {responseFormat === "lrc" ?
                     <>
-                        <HeadingSecondary>Response Path (Optional)</HeadingSecondary>
+                        <Heading tag="h3">Response Path (Optional)</Heading>
                         <TextInput
                             type="text"
                             value={responsePath}
@@ -315,7 +315,7 @@ export function CustomProvidersManager() {
     return (
         <Flex flexDirection="column" gap={12} style={{ marginTop: "16px" }}>
             <section>
-                <HeadingSecondary>Custom Lyrics Providers</HeadingSecondary>
+                <Heading tag="h3">Custom Lyrics Providers</Heading>
                 <Paragraph>
                     Add custom lyrics provider endpoints. API response should return lyrics as JSON.
                 </Paragraph>
