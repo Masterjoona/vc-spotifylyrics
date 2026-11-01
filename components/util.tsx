@@ -69,60 +69,88 @@ const getIndexes = (lyrics: SyncedLyric[], position: number, delay: number) => {
     return [currentIndex, nextLyricIdx];
 };
 
-export function useLyrics({ scroll = true, previewLyrics = void 0 }: { scroll?: boolean, previewLyrics?: SyncedLyric[]; } = {}) {
-    const [track, storePosition, isPlaying] = useStateFromStores(
-        [SpotifyStore], () => [
-            SpotifyStore.track,
-            SpotifyStore.mPosition,
-            SpotifyStore.isPlaying,
-        ], []);
+export function useSpotifyTrack() {
+    return useStateFromStores(
+        [SpotifyStore],
+        () => SpotifyStore.track,
+        [],
+        (prev, next) => (prev?.id ? prev.id === next?.id : prev?.name === next?.name)
+    );
+}
 
-    const lyricsInfo = useStateFromStores([SpotifyLrcStore], () => SpotifyLrcStore.lyricsInfo);
+export function useLyricsInfo() {
+    return useStateFromStores([SpotifyLrcStore], () => SpotifyLrcStore.lyricsInfo);
+}
+
+export function useCurrentLyrics(previewLyrics?: SyncedLyric[]) {
+    const lyricsInfo = useLyricsInfo();
+
+    return useMemo(() => {
+        if (previewLyrics) return previewLyrics;
+        return lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
+    }, [lyricsInfo, previewLyrics]);
+}
+
+export function useLyricIndex(currentLyrics?: SyncedLyric[]) {
+    const [storePosition, isPlaying] = useStateFromStores(
+        [SpotifyStore],
+        () => [SpotifyStore.mPosition, SpotifyStore.isPlaying],
+        []
+    );
 
     const { LyricDelay } = settings.use(["LyricDelay"]);
 
     const [currLrcIndex, setCurrLrcIndex] = useState<number | undefined>(void 0);
+    const [nextLrcIndex, setNextLrcIndex] = useState<number | undefined>(void 0);
     const [position, setPosition] = useState(storePosition);
 
-    const currentLyrics = useMemo(() => {
-        if (previewLyrics) return previewLyrics;
-        return lyricsInfo?.lyricsVersions[lyricsInfo.useLyric];
-    }, [lyricsInfo, previewLyrics]);
-
-    const lyricRefs = useMemo(() => currentLyrics?.map(() => React.createRef<HTMLDivElement>()), [currentLyrics]);
-
     useEffect(() => {
-        if (currentLyrics && isNonNullish(position)) {
-            const [currentIndex] = getIndexes(currentLyrics, position, LyricDelay);
-            setCurrLrcIndex(prev => prev !== currentIndex ? currentIndex : prev);
+        if (!currentLyrics || !isNonNullish(position)) {
+            setCurrLrcIndex(void 0);
+            setNextLrcIndex(void 0);
             return;
         }
 
-        isNonNullish(currLrcIndex) && setCurrLrcIndex(void 0);
+        const [currentIndex, nextIndex] = getIndexes(currentLyrics, position, LyricDelay);
+        setCurrLrcIndex(prev => prev !== currentIndex ? currentIndex : prev);
+        setNextLrcIndex(prev => prev !== nextIndex ? nextIndex : prev);
     }, [currentLyrics, position, LyricDelay]);
 
-
     useEffect(() => {
-        if (!scroll || !isNonNullish(currLrcIndex) || !lyricRefs || currLrcIndex < 0) return;
+        if (!currentLyrics?.length) return;
 
-        lyricRefs[currLrcIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, [currLrcIndex, scroll, lyricRefs]);
-
-    useEffect(() => {
-        if (!scroll || !currentLyrics || !lyricRefs) return;
-        const [, nextLyricIndex] = getIndexes(currentLyrics, storePosition, LyricDelay);
-
-        isNonNullish(nextLyricIndex) && !isNonNullish(currLrcIndex) && lyricRefs[nextLyricIndex].current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, [storePosition, lyricRefs, currentLyrics, LyricDelay]);
-
-    useEffect(() => {
         setPosition(SpotifyStore.position);
         if (!isPlaying) return;
 
-        const interval = setInterval(() => setPosition(p => p + 1000), 1000);
+        const interval = setInterval(() => setPosition(SpotifyStore.position), 1000);
 
         return () => clearInterval(interval);
-    }, [storePosition, isPlaying]);
+    }, [storePosition, isPlaying, currentLyrics]);
 
-    return { track, currentLyrics, lyricRefs, lyricsInfo, currLrcIndex };
+    return { currLrcIndex, nextLrcIndex };
+}
+
+export function useLyricRefs({
+    lyrics,
+    currLrcIndex,
+    nextLrcIndex,
+    scroll = true,
+}: {
+    lyrics?: SyncedLyric[];
+    currLrcIndex?: number;
+    nextLrcIndex?: number;
+    scroll?: boolean;
+}) {
+    const lyricRefs = useMemo(() => lyrics?.map(() => React.createRef<HTMLDivElement>()), [lyrics]);
+
+    useEffect(() => {
+        if (!scroll || !lyricRefs) return;
+
+        const index = currLrcIndex ?? nextLrcIndex;
+        if (!isNonNullish(index) || index < 0) return;
+
+        lyricRefs[index]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, [currLrcIndex, nextLrcIndex, scroll, lyricRefs]);
+
+    return lyricRefs;
 }

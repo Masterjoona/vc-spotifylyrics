@@ -10,12 +10,17 @@ export interface SyncedLyric {
 }
 
 export enum Provider {
-    LRCLIB = "LRCLIB",
-    Spotify = "Spotify",
     Translated = "Translated",
     Romanized = "Romanized",
     None = "None",
 }
+
+export const alternativeTypeLabels = {
+    [Provider.Translated]: "translate",
+    [Provider.Romanized]: "romanize",
+} as const;
+
+export type AlternativeProvider = keyof typeof alternativeTypeLabels;
 
 export interface CustomProvider {
     id: string;
@@ -27,6 +32,6 @@ export interface CustomProvider {
 }
 
 export interface LyricsData {
-    lyricsVersions: Partial<Record<Provider | string, SyncedLyric[] | undefined>>;
-    useLyric: Provider | string;
+    lyricsVersions: Partial<Record<string, SyncedLyric[] | undefined>>;
+    useLyric: string;
 }

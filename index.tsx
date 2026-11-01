@@ -12,8 +12,9 @@ import { Player } from "@plugins/spotifyControls/PlayerComponent";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 
-import { migrateOldLyrics } from "./api";
 import { Lyrics } from "./components/lyrics";
+import { migrateCustomProviders } from "./providers/customProvider";
+import { LRCLIB_PROVIDER_ID } from "./providers/defaults";
 import settings from "./settings";
 
 
@@ -21,6 +22,7 @@ export default definePlugin({
     name: "SpotifyLyrics",
     authors: [Devs.Joona],
     description: "Adds lyrics to SpotifyControls",
+    tags: ["Activity", "Fun"],
     dependencies: ["SpotifyControls"],
     patches: [
         {
@@ -55,6 +57,10 @@ export default definePlugin({
     },
     settings,
     async start() {
-        await migrateOldLyrics();
+        await migrateCustomProviders();
+
+        if (!settings.store.LyricsProvider || settings.store.LyricsProvider === "Spotify") {
+            settings.store.LyricsProvider = LRCLIB_PROVIDER_ID;
+        }
     },
 });

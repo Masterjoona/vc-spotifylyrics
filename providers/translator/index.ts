@@ -87,3 +87,5 @@ export const lyricsAlternativeFetchers = {
     [Provider.Translated]: translateLyrics,
     [Provider.Romanized]: romanizeLyrics
 };
+
+export const lyricsAlternative = Object.keys(lyricsAlternativeFetchers);

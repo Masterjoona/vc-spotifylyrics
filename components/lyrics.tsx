@@ -6,14 +6,13 @@
 
 import { Paragraph } from "@components/Paragraph";
 import { SpotifyStore } from "@plugins/spotifyControls/SpotifyStore";
-import { openModal } from "@utils/modal";
-import { ContextMenuApi, React, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, openModal, React, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
 
 import { SpotifyLrcStore } from "../providers/store";
 import settings from "../settings";
 import { LyricsContextMenu } from "./ctxMenu";
 import { LyricsModal } from "./modal";
-import { cl, NoteSvg, useLyrics } from "./util";
+import { cl, NoteSvg, useCurrentLyrics, useLyricIndex, useLyricRefs, useSpotifyTrack } from "./util";
 
 const prevCl = cl("prev");
 const nextCl = cl("next");
@@ -21,7 +20,9 @@ const currentCl = cl("current");
 
 function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
     const { ShowMusicNoteOnNoLyrics } = settings.use(["ShowMusicNoteOnNoLyrics"]);
-    const { lyricRefs, currLrcIndex, currentLyrics } = useLyrics({ scroll });
+    const currentLyrics = useCurrentLyrics();
+    const { currLrcIndex, nextLrcIndex } = useLyricIndex(currentLyrics);
+    const lyricRefs = useLyricRefs({ lyrics: currentLyrics, currLrcIndex, nextLrcIndex, scroll });
 
     const makeClassName = (index: number): string => {
         if (currLrcIndex == null) return prevCl;
@@ -61,14 +62,11 @@ function LyricsDisplay({ scroll = true }: { scroll?: boolean; }) {
 }
 
 export function Lyrics({ scroll = true }: { scroll?: boolean; } = {}) {
-    SpotifyLrcStore.init();
+    // without this opening discord while spotify was playing wont show lyrics
+    void SpotifyLrcStore.lyricsInfo;
 
-    const track = useStateFromStores(
-        [SpotifyStore],
-        () => SpotifyStore.track,
-        [],
-        (prev, next) => (prev?.id ? prev.id === next?.id : prev?.name === next?.name)
-    );
+
+    const track = useSpotifyTrack();
 
     const device = useStateFromStores(
         [SpotifyStore],

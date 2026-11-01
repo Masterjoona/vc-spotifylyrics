@@ -5,31 +5,29 @@
  */
 
 import { copyWithToast } from "@utils/discord";
-import { openModal } from "@utils/modal";
-import { useAwaiter } from "@utils/react";
 import { findComponentByCodeLazy } from "@webpack";
-import { FluxDispatcher, Menu } from "@webpack/common";
+import { FluxDispatcher, Menu, openModal } from "@webpack/common";
 
-import { providers } from "../api";
 import { getCustomProviders } from "../providers/customProvider";
-import { lyricsAlternative } from "../providers/store";
-import { Provider } from "../providers/types";
+import { lyricsAlternative } from "../providers/translator";
 import { SearchModal } from "./search";
-import { useLyrics } from "./util";
+import { useCurrentLyrics, useLyricIndex, useLyricsInfo, useSpotifyTrack } from "./util";
 
 const CopyIcon = findComponentByCodeLazy(" 1-.5.5H10a6");
 const SearchIcon = findComponentByCodeLazy("1.42l-4.67-4.68ZM17", "children:(");
 
 export function LyricsContextMenu() {
-    const { track, lyricsInfo, currentLyrics, currLrcIndex } = useLyrics({ scroll: false });
-    const [customProviders] = useAwaiter(getCustomProviders, {
-        fallbackValue: [],
-    });
+    const track = useSpotifyTrack();
+    const lyricsInfo = useLyricsInfo();
+    const currentLyrics = useCurrentLyrics();
+    const { currLrcIndex } = useLyricIndex(currentLyrics);
+    const customProviders = getCustomProviders();
 
     const currLyric = currentLyrics?.[currLrcIndex ?? NaN];
-    const hasLyrics = [...providers, ...customProviders.map(p => p.id)].some(provider => lyricsInfo?.lyricsVersions[provider]?.length);
+    const hasLyrics = customProviders.some(provider => lyricsInfo?.lyricsVersions[provider.id]?.length);
 
-    const allProviders = ([...providers, ...lyricsAlternative] as string[]).map(p => ({ name: p, id: p })).concat(customProviders.map(p => ({ name: p.name, id: p.id })));
+    const allProviders = customProviders.map(p => ({ name: p.name, id: p.id, enabled: p.enabled }))
+        .concat(lyricsAlternative.map(p => ({ name: p, id: p, enabled: true })));
 
     return (
         <Menu.Menu
@@ -69,10 +67,9 @@ export function LyricsContextMenu() {
                         group="vc-spotify-lyrics-switch-provider"
                         label={`${provider.name}${lyricsInfo?.lyricsVersions[provider.id] ? " (saved)" : ""}`}
                         checked={provider.id === lyricsInfo?.useLyric}
-                        disabled={lyricsAlternative.includes(provider.id as Provider) && !hasLyrics}
+                        disabled={!provider.enabled || (lyricsAlternative.includes(provider.id) && !hasLyrics)}
                         action={() => {
                             FluxDispatcher.dispatch({
-                                // @ts-ignore
                                 type: "SPOTIFY_LYRICS_PROVIDER_CHANGE",
                                 provider: provider.id,
                             });

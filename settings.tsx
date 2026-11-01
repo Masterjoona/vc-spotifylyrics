@@ -14,13 +14,15 @@ import { openModal, Select, showToast, useMemo } from "@webpack/common";
 import { clearLyricsCache, getLyricsCount, removeTranslations } from "./api";
 import { CustomProvidersManager } from "./components/customProvidersManager";
 import { SearchModal } from "./components/search";
-import { useLyrics } from "./components/util";
+import { useLyricsInfo } from "./components/util";
 import { getCustomProviders } from "./providers/customProvider";
+import { DEFAULT_CUSTOM_PROVIDERS, LRCLIB_PROVIDER_ID } from "./providers/defaults";
 import languages from "./providers/translator/languages";
 import { Provider } from "./providers/types";
 
 function Details() {
-    const { lyricsInfo } = useLyrics();
+    const lyricsInfo = useLyricsInfo();
+    const providers = getCustomProviders();
 
     const [count, error, loading] = useAwaiter(
         useMemo(() => getLyricsCount, []),
@@ -32,40 +34,28 @@ function Details() {
 
     return (
         <>
-            <Paragraph>Current lyrics provider: {lyricsInfo?.useLyric || "None"}</Paragraph>
+            <Paragraph>Current lyrics provider: {providers.find(p => p.id === lyricsInfo?.useLyric)?.name || "None"}</Paragraph>
             {loading ? <Paragraph>Loading lyrics count...</Paragraph> : error ? <Paragraph>Failed to get lyrics count</Paragraph> : <Paragraph>Lyrics count: {count}</Paragraph>}
         </>
     );
 }
 
 function LyricsProviderSetting() {
-    const [customProviders, error, loading] = useAwaiter(getCustomProviders, {
-        fallbackValue: [],
-    });
+    const customProviders = getCustomProviders();
 
-    const providerOptions = [
-        { value: Provider.Spotify, label: "Spotify (Musixmatch) (disabled)" },
-        { value: Provider.LRCLIB, label: "LRCLIB", default: true },
-        ...customProviders.map(provider => ({
-            value: provider.id,
-            label: provider.enabled ? provider.name : `${provider.name} (disabled)`,
-        })),
-    ];
+    const providerOptions = customProviders.filter(provider => provider.enabled).map(provider => ({
+        value: provider.id,
+        label: provider.name,
+        default: provider.id === LRCLIB_PROVIDER_ID,
+    }));
 
     if (!settings.store.LyricsProvider) {
-        settings.store.LyricsProvider = Provider.LRCLIB;
+        settings.store.LyricsProvider = LRCLIB_PROVIDER_ID;
     }
 
     return (
         <Flex flexDirection="column" gap={8}>
             <Paragraph size="md" weight="semibold">Where lyrics are fetched from</Paragraph>
-            {loading ? (
-                <Paragraph>Loading custom providers...</Paragraph>
-            ) : error ? (
-                <Paragraph style={{ color: "var(--text-danger)" }}>
-                    Failed to load custom providers. Built-in providers are still available.
-                </Paragraph>
-            ) : null}
             <Select
                 placeholder="Select provider"
                 options={providerOptions}
@@ -148,6 +138,10 @@ const settings = definePluginSettings({
         }
     },
     CustomProviders: {
+        type: OptionType.CUSTOM,
+        default: DEFAULT_CUSTOM_PROVIDERS,
+    },
+    CustomProvidersComponent: {
         description: "",
         type: OptionType.COMPONENT,
         component: () => <CustomProvidersManager />,

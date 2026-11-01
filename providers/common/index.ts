@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Line } from "../spotify/types";
 import { SyncedLyric } from "../types";
 
 export async function safeFetchJson<T>(url: string, options?: RequestInit): Promise<T | null> {
@@ -20,6 +19,11 @@ export async function safeFetchJson<T>(url: string, options?: RequestInit): Prom
 export function cleanLyricText(text: string): string | null {
     const trimmed = text.trim();
     return (trimmed === "" || trimmed === "♪") ? null : trimmed;
+}
+
+interface Line {
+    startTimeMs: string;
+    words: string;
 }
 
 export function mapSpotifyLyrics(lines: Line[]): SyncedLyric[] | null {

@@ -10,7 +10,6 @@ import { app, session } from "electron";
 
 const SAFE_LYRIC_DOMAINS = [
     "lrclib.net",
-    // "spotify-lyrics-api-pi.vercel.app",
     "lyrics.joona.moe"
 ];
 

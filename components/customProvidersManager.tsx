@@ -7,20 +7,41 @@
 import { Button } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { FormSwitch } from "@components/FormSwitch";
-import { HeadingSecondary } from "@components/Heading";
+import { Heading } from "@components/Heading";
 import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
 import { identity } from "@utils/misc";
+import { promptToRestart } from "@utils/promptToRestart";
 import { RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, Select, showToast, TextInput, useEffect, useState } from "@webpack/common";
 
 import { addCustomProvider, fetchCustomLyrics, getCustomProviders, removeCustomProvider, updateCustomProvider } from "../providers/customProvider";
+import { isProtectedProvider } from "../providers/defaults";
 import { CustomProvider } from "../providers/types";
 
 interface CustomProviderModalProps {
     modalProps: RenderModalProps;
     provider?: CustomProvider;
-    onSaved: () => Promise<void>;
+    onSaved: () => void;
+}
+
+const dummyTrack = {
+    id: "5hM5arv9KDbCHS0k9uqwjr",
+    name: "Borderline",
+    artists: [{ name: "Tame Impala" }],
+    album: { name: "Currents" },
+    duration: 238000,
+} as any;
+
+function canParseProviderUrl(url: string) {
+    return URL.canParse(
+        url
+            .replace("{artist}", "test")
+            .replace("{track}", "test")
+            .replace("{album}", "test")
+            .replace("{id}", "test")
+            .replace("{duration}", "1")
+    );
 }
 
 function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderModalProps) {
@@ -46,8 +67,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
             return;
         }
 
-        const canBeParsed = URL.canParse(rawUrl.replace("{artist}", "test").replace("{track}", "test").replace("{id}", "test"));
-        if (!canBeParsed) {
+        if (!canParseProviderUrl(rawUrl)) {
             setError("URL is not valid");
             return;
         }
@@ -56,6 +76,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
         const origin = url.origin.toLocaleLowerCase();
 
         const isAllowed = await VencordNative.csp.isDomainAllowed(origin, ["connect-src"]);
+        let cspChanged = false;
 
         if (!isAllowed) {
             const result = await VencordNative.csp.requestAddOverride(origin, ["connect-src"], "SpotifyLyrics");
@@ -71,33 +92,35 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                     setError("Invalid domain. Please check the URL and try again.");
                     return;
                 case "ok":
-                    showToast({ text: "CSP override added. You can now save this provider.", variant: "success" });
+                    cspChanged = true;
                     break;
             }
         }
 
-        try {
-            const newProvider: CustomProvider = {
-                id: provider?.id || Date.now().toString(),
-                name: name.trim(),
-                url: rawUrl.trim(),
-                enabled,
-                responseFormat: responseFormat as "spotify" | "lrc",
-                responsePath: responsePath.trim() || undefined,
-            };
+        const newProvider: CustomProvider = {
+            id: provider?.id || Date.now().toString(),
+            name: name.trim(),
+            url: rawUrl.trim(),
+            enabled,
+            responseFormat: responseFormat as "spotify" | "lrc",
+            responsePath: responsePath.trim() || undefined,
+        };
 
-            if (provider) {
-                await updateCustomProvider(provider.id, newProvider);
-                showToast({ text: "Provider updated", variant: "success" });
-            } else {
-                await addCustomProvider(newProvider);
-                showToast({ text: "Provider added", variant: "success" });
-            }
+        if (provider) {
+            updateCustomProvider(provider.id, newProvider);
+            showToast({ text: "Provider updated", variant: "success" });
+        } else {
+            addCustomProvider(newProvider);
+            showToast({ text: "Provider added", variant: "success" });
+        }
 
-            await onSaved();
-            modalProps.onClose();
-        } catch (e) {
-            setError(`Failed to save provider: ${e}`);
+        onSaved();
+        modalProps.onClose();
+
+        if (cspChanged) {
+            promptToRestart("relaunch", {
+                subtitle: "A CSP override was added for this provider. Restart the app for it to take effect."
+            });
         }
     };
 
@@ -120,37 +143,33 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
             setError("Please fill in the required fields before testing.");
             return;
         }
-
-        try {
-            const testProvider: CustomProvider = {
-                id: "test",
-                name: name.trim(),
-                url: rawUrl.trim(),
-                enabled,
-                responseFormat: responseFormat as "spotify" | "lrc",
-                responsePath: responsePath.trim() || undefined,
-            };
-
-            const dummyTrack = {
-                id: "5hM5arv9KDbCHS0k9uqwjr",
-                name: "Borderline",
-                artists: [{ name: "Tame Impala" }],
-            } as any;
-
-            const lyrics = await fetchCustomLyrics(testProvider, dummyTrack);
-            if (lyrics && lyrics.length > 0) {
-                showToast({ text: "Test successful! Lyrics were fetched.", variant: "success" });
-            } else {
-                if (cspError) {
-                    setError("Test failed due to CSP restrictions. Please save and follow the instructions to add a CSP override for this provider.");
-                    setCspError(false);
-                    return;
-                }
-                setError("Test completed but no lyrics were returned. Please check the response format and path.");
-            }
-        } catch (e) {
-            setError(`Test failed: ${e}`);
+        if (!canParseProviderUrl(rawUrl)) {
+            setError("URL is not valid");
+            return;
         }
+
+        const testProvider: CustomProvider = {
+            id: "test",
+            name: name.trim(),
+            url: rawUrl.trim(),
+            enabled: true,
+            responseFormat: responseFormat as "spotify" | "lrc",
+            responsePath: responsePath.trim() || undefined,
+        };
+
+        const lyrics = await fetchCustomLyrics(testProvider, dummyTrack);
+        if (lyrics?.length) {
+            showToast({ text: "Test successful! Lyrics were fetched.", variant: "success" });
+            return;
+        }
+
+        if (cspError) {
+            setError("Test failed due to CSP restrictions. Please save and follow the instructions to add a CSP override for this provider.");
+            setCspError(false);
+            return;
+        }
+
+        setError("Test completed but no lyrics were returned. Please check the response format and path.");
     };
 
     return (
@@ -177,7 +196,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
             ]}
         >
             <Flex flexDirection="column" gap={12} style={{ padding: "4px 0" }}>
-                <HeadingSecondary>Provider Name</HeadingSecondary>
+                <Heading tag="h3">Provider Name</Heading>
                 <TextInput
                     type="text"
                     value={name}
@@ -187,7 +206,7 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                     }}
                     placeholder="e.g., My Lyrics API"
                 />
-                <HeadingSecondary>API URL</HeadingSecondary>
+                <Heading tag="h3">API URL</Heading>
                 <TextInput
                     type="text"
                     value={rawUrl}
@@ -195,13 +214,13 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                         setUrl(v);
                         setError("");
                     }}
-                    placeholder="https://api.example.com/lyrics?artist={artist}&track={track}&id={id}"
+                    placeholder="https://api.example.com/lyrics?artist={artist}&track={track}&album={album}&duration={duration}&id={id}"
                 />
                 <Paragraph>
-                    Use {"{artist}"}, {"{track}"}, or {"{id}"} as placeholders.
+                    Use {"{artist}"}, {"{track}"}, {"{album}"}, {"{duration}"} (seconds), or {"{id}"} as placeholders.
                 </Paragraph>
 
-                <HeadingSecondary>Response Format</HeadingSecondary>
+                <Heading tag="h3">Response Format</Heading>
                 <Select
                     options={[
                         { label: "Spotify", value: "spotify" },
@@ -213,30 +232,25 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
                     serialize={identity}
                 />
 
-                {responseFormat === "lrc" ?
-                    <>
-                        <HeadingSecondary>Response Path (Optional)</HeadingSecondary>
-                        <TextInput
-                            type="text"
-                            value={responsePath}
-                            onChange={setResponsePath}
-                            placeholder="e.g., data.lyrics or result.lines"
-                        />
-                        <Paragraph>
-                            Use dot notation to extract nested arrays, for example: data.lyrics
-                        </Paragraph>
-                    </>
-                    : null}
+                <Heading>Response Path (Optional)</Heading>
+                <TextInput
+                    type="text"
+                    value={responsePath}
+                    onChange={setResponsePath}
+                    placeholder="e.g., data.lyrics or result.lines"
+                />
+                <Paragraph>
+                    Use dot notation to extract the lyrics value, for example: data.lyrics
+                </Paragraph>
 
                 <FormSwitch
                     title="Enabled"
-                    description="Use this provider in fallback order"
                     value={enabled}
                     onChange={setEnabled}
                     hideBorder
                 />
 
-                {!!error && (
+                {error && (
                     <Paragraph>
                         {error}
                     </Paragraph>
@@ -247,79 +261,40 @@ function CustomProviderModal({ modalProps, provider, onSaved }: CustomProviderMo
 }
 
 export function CustomProvidersManager() {
-    const [providers, setProviders] = useState<CustomProvider[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadProviders();
-    }, []);
-
-    const loadProviders = async () => {
-        try {
-            const data = await getCustomProviders();
-            setProviders(data);
-        } catch (e) {
-            console.error("Failed to load custom providers:", e);
-            showToast({ text: "Failed to load providers", variant: "critical" });
-        } finally {
-            setLoading(false);
-        }
-    };
+    const [providers, setProviders] = useState(getCustomProviders);
 
     const handleDelete = async (id: string) => {
         try {
             await removeCustomProvider(id);
-            setProviders(providers.filter(p => p.id !== id));
+            setProviders(getCustomProviders());
             showToast({ text: "Provider deleted", variant: "success" });
         } catch (e) {
+            console.error(e);
             showToast({ text: "Failed to delete provider", variant: "critical" });
         }
     };
 
-    const handleToggle = async (provider: CustomProvider) => {
-        try {
-            await updateCustomProvider(provider.id, { enabled: !provider.enabled });
-            setProviders(
-                providers.map(p =>
-                    p.id === provider.id ? { ...p, enabled: !p.enabled } : p
-                )
-            );
-        } catch (e) {
-            showToast({ text: "Failed to update provider", variant: "critical" });
-        }
+    const handleToggle = (provider: CustomProvider) => {
+        updateCustomProvider(provider.id, { enabled: !provider.enabled });
+        setProviders(getCustomProviders());
     };
 
-    const handleAdd = () => {
-        openModal(props => (
-            <CustomProviderModal
-                modalProps={props}
-                onSaved={loadProviders}
-            />
-        ));
-    };
-
-    const handleEdit = (provider: CustomProvider) => {
+    const handleModelOpen = (provider?: CustomProvider) => {
         openModal(props => (
             <CustomProviderModal
                 modalProps={props}
                 provider={provider}
-                onSaved={loadProviders}
+                onSaved={() => setProviders(getCustomProviders())}
             />
         ));
     };
 
-    if (loading) {
-        return <Paragraph>Loading custom providers...</Paragraph>;
-    }
-
     return (
         <Flex flexDirection="column" gap={12} style={{ marginTop: "16px" }}>
-            <section>
-                <HeadingSecondary>Custom Lyrics Providers</HeadingSecondary>
-                <Paragraph>
-                    Add custom lyrics provider endpoints. API response should return lyrics as JSON.
-                </Paragraph>
-            </section>
+            <Heading>Custom Lyrics Providers</Heading>
+            <Paragraph>
+                Add custom lyrics provider endpoints. API response should return lyrics as JSON.
+            </Paragraph>
 
             {providers.length === 0 ? (
                 <Paragraph>
@@ -362,37 +337,24 @@ export function CustomProvidersManager() {
                                         </Paragraph>
                                     )}
                                 </Flex>
-                                <Paragraph
-                                    style={{
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
-                                    {provider.url}
-                                </Paragraph>
-                                {provider.responsePath && (
-                                    <Paragraph
-                                        style={{
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                            whiteSpace: "nowrap",
-                                        }}
-                                    >
+                                <Paragraph>{provider.url}</Paragraph>
+                                {provider.responsePath &&
+                                    (<Paragraph>
                                         Path: {provider.responsePath}
-                                    </Paragraph>
-                                )}
+                                    </Paragraph>)}
                             </Flex>
                             <Flex gap={8}>
                                 <Button
                                     size="small"
-                                    onClick={() => handleEdit(provider)}
+                                    onClick={() => handleModelOpen(provider)}
                                 >
                                     Edit
                                 </Button>
                                 <Button
                                     size="small"
                                     variant="dangerPrimary"
+                                    disabled={isProtectedProvider(provider)}
+                                    title={isProtectedProvider(provider) ? "Bundled providers cannot be deleted" : undefined}
                                     onClick={() => handleDelete(provider.id)}
                                 >
                                     Delete
@@ -403,7 +365,7 @@ export function CustomProvidersManager() {
                 </Flex>
             )}
 
-            <Button onClick={handleAdd} variant="primary">
+            <Button onClick={() => handleModelOpen()} variant="primary">
                 Add Custom Provider
             </Button>
         </Flex>
